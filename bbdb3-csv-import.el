@@ -22,15 +22,16 @@
 
 ;;; Commentary:
 
-;; Some tools such as Thunderbird and Outlook allow for exporting contact data as
-;; CSV (Comma Separated Value) files.  This package, `bbdb3-csv-import.el', allows
-;; for importing such files into Emacs's bbdb database, version 3+.
+;; Some tools such as Thunderbird and Outlook allow for exporting contact data
+;; as CSV (Comma Separated Value) files. This package allows for importing such
+;; files into Emacs's bbdb database, version 3+.
 
 ;;; Installation:
 ;;
-;; dependencies. Available in marmalade/melpa or via the internet
-;; pcsv.el, dash.el, bbdb
-;; 
+;; dependencies: pcsv.el, dash.el, bbdb
+;; These are available via marmalade/melpa or the internet
+;;
+;; Add to init file or execute manually:
 ;; (load-file FILENAME-OF-THIS-FILE)
 ;; or
 ;; (add-to-list 'load-path DIRECTORY-CONTAINING-THIS-FILE)
@@ -38,22 +39,52 @@
 
 ;;; Usage:
 ;;
-;; Backup or rename ~/.bbdb while testing that the import works correctly
+;; Backup or rename any existing ~/.bbdb and ~/.emacs.d/bbdb while testing that
+;; the import works correctly.
 ;;
-;; Simply call `bbdb3-csv-import-buffer' or `bbdb3-csv-import-file'. Interactively
-;; they prompt for file/buffer. Use non-interactively for no prompts.
+;; Simply call `bbdb3-csv-import-buffer' or
+;; `bbdb3-csv-import-file'. Interactively they prompt for file/buffer. Use
+;; non-interactively for no prompts.
 ;;
 ;; Thunderbird csv data works out of the box. Otherwise you will need to create
 ;; a mapping table to suit your data and assign it to
-;; bbdb3-csv-import-mapping-table. Please send any new mapping tables upstream so
-;; I can add it to this file for other's benefit. Ian Kelling is willing to help
-;; if any issues arise.
+;; bbdb3-csv-import-mapping-table. Please send any new mapping tables upstream
+;; so I can add it to this file for other's benefit. I, Ian Kelling, am willing
+;; to help with any issues including creating a mapping table given sample data.
 ;;
+;; Tips for testing: bbdb doesn't work if you delete the bbdb database file in
+;; the middle of an emacs session. If you want to empty the current bbdb database,
+;; do M-x bbdb then .* then C-u * d on the beginning of a record.
 
 (require 'pcsv)
-(require 'bbdb)
 (require 'dash)
+(require 'bbdb-com)
+(eval-when-compile (require 'cl))
 
+(defconst bbdb3-csv-import-thunderbird
+  '(("firstname" "First Name")
+    ("lastname" "Last Name")
+    ("name" "Display Name")
+    ("aka" "Nickname")
+    ("mail" "Primary Email" "Secondary Email")
+    ("phone" "Work Phone" "Home Phone" "Fax Number" "Pager Number" "Mobile Number")
+    ("address"
+     ("home address" (("Home Address"
+                       "Home Address 2")
+                      "Home City"
+                      "Home State"
+                      "Home ZipCode"
+                      "Home Country"))
+     ("work address" (("Work Address"
+                       "Work Address 2")
+                      "Work City"
+                      "Work State"
+                      "Work ZipCode"
+                      "Work Country")))
+    ("organization" ("Organization"))
+    ("xfields" "Web Page 1" "Web Page 2" "Birth Year" "Birth Month"
+     "Birth Day" "Department" "Custom 1" "Custom 2" "Custom 3"
+     "Custom 4" "Notes" "Job Title")))
 
 (defvar bbdb3-csv-import-mapping-table bbdb3-csv-import-thunderbird
   "The table which maps bbdb3 fields to csv fields.
@@ -64,32 +95,6 @@ field names are used in the first row of csv data.
 Many fields are optional. If you aren't sure if one is,
 best to just try it. The doc string for `bbdb-create-internal'
 may be useful for determining which fields are required.")
-
-(defconst bbdb3-csv-import-thunderbird
-      '(("firstname" "First Name")
-        ("lastname" "Last Name")
-        ("name" "Display Name")
-        ("aka" "Nickname")
-        ("mail" "Primary Email" "Secondary Email")
-        ("phone" "Work Phone" "Home Phone" "Fax Number" "Pager Number" "Mobile Number")
-        ("address"
-         ("home address" (("Home Address"
-                           "Home Address 2")
-                          "Home City"
-                          "Home State"
-                          "Home ZipCode"
-                          "Home Country"))
-         ("work address" (("Work Address"
-                           "Work Address 2")
-                          "Work City"
-                          "Work State"
-                          "Work ZipCode"
-                          "Work Country")))
-        ("organization" ("Organization"))
-        ("xfields" "Web Page 1" "Web Page 2" "Birth Year" "Birth Month"
-         "Birth Day" "Department" "Custom 1" "Custom 2" "Custom 3"
-         "Custom 4" "Notes" "Job Title")))
-
 
 ;;;###autoload
 (defun bbdb3-csv-import-file (filename)
@@ -114,18 +119,21 @@ Defaults to current buffer."
     (setq bbdb-allow-duplicates t)
     (while (setq csv-record (map 'list 'cons csv-fields (pop csv-contents)))
       (cl-flet* 
-          ((rd-assoc (list) (rd (lambda (elem) (assoc-plus elem csv-record)) list))
+          ((rd (func list) (bbdb3-csv-import-reduce func list)) ;; just a local defalias
+           (assoc-plus (key list) (bbdb3-csv-import-assoc-plus key list)) ;; defalias
+           (rd-assoc (list) (rd (lambda (elem) (assoc-plus elem csv-record)) list))
            (mapcar-assoc (list) (mapcar (lambda (elem) (cdr (assoc elem csv-record))) list))
            (field-map (field) (cdr (assoc field bbdb3-csv-import-mapping-table)))
-           (map-assoc (field) (assoc-plus (car (field-map field)) csv-record))
-           ;; EPA compliance (Emacs pollution agency)
-           (rd bbdb3-csv-import-reduce)
-           (assoc-plus bbdb3-csv-import-assoc-plus))
+           (map-assoc (field) (assoc-plus (car (field-map field)) csv-record)))
+        
         (let ((name (let ((first (map-assoc "firstname"))
                           (last (map-assoc "lastname"))
                           (name (map-assoc "name")))
                       (if (and first last)
-                          (cons first last)
+                          ;; purely historical note.
+                          ;; it works exactly the same but I don't use (cons first last) due to a bug
+                          ;; http://www.mail-archive.com/bbdb-info%40lists.sourceforge.net/msg06388.html
+                          (concat first " " last)
                         (or name first last ""))))
               (phone (rd (lambda (elem)
                            (let ((data (assoc-plus elem csv-record)))
@@ -156,8 +164,8 @@ Defaults to current buffer."
               (affix (map-assoc "affix"))
               (aka (rd-assoc (field-map "aka"))))
           (bbdb-create-internal name affix aka organization mail
-                                phone address xfields t)))))
-  (setq bbdb-allow-duplicates initial-duplicate-value))
+                                phone address xfields t))))
+    (setq bbdb-allow-duplicates initial-duplicate-value)))
 
 
 ;;;###autoload

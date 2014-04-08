@@ -1,0 +1,6 @@
+software versions actually tested:
+4/08/2014
+bbdb-version 3.1.1
+emacs 24.4.50.1 development version
+pcsv 20131110.750
+thunderbird test data from thunderbird 17.0.10
