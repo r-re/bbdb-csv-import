@@ -22,9 +22,9 @@
 
 ;;; Commentary:
 
-;; Some tools such as Thunderbird and Outlook allow for exporting contact data
-;; as CSV (Comma Separated Value) files. This package allows for importing such
-;; files into Emacs's bbdb database, version 3+.
+;; This package imports CSV (Comma Separated Value) text files into Emacs's bbdb
+;; database, version 3+.  Programs such as Thunderbird and Outlook allow for
+;; exporting contact data as csv files.
 
 ;;; Installation:
 ;;
