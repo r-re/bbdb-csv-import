@@ -22,9 +22,9 @@
 
 ;;; Commentary:
 
-;; This package imports CSV (Comma Separated Value) text files into Emacs's bbdb
-;; database, version 3+.  Programs such as Thunderbird and Outlook allow for
-;; exporting contact data as csv files.
+;; Importer of csv (comma separated value) text into Emacs’s bbdb database,
+;; version 3+. Programs such as Thunderbird and Outlook allow for exporting
+;; contact data as csv files.
 
 ;;; Installation:
 ;;
@@ -48,9 +48,11 @@
 ;;
 ;; Thunderbird csv data works out of the box. Otherwise you will need to create
 ;; a mapping table to suit your data and assign it to
-;; bbdb3-csv-import-mapping-table. Please send any new mapping tables upstream
-;; so I can add it to this file for other's benefit. I, Ian Kelling, am willing
-;; to help with any issues including creating a mapping table given sample data.
+;; bbdb3-csv-import-mapping-table. Note that variable's doc string and perhaps
+;; the test data within this project for more details. Please send any new
+;; mapping tables upstream so I can add it to this file for other's benefit. I,
+;; Ian Kelling, am willing to help with any issues including creating a mapping
+;; table given sample data.
 ;;
 ;; Tips for testing: bbdb doesn't work if you delete the bbdb database file in
 ;; the middle of an emacs session. If you want to empty the current bbdb database,
