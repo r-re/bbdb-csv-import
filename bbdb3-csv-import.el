@@ -124,6 +124,7 @@
     ("xfields" "Suffix" "Department" "Job Title" "Assistant's Name" "Birthday" "Manager's Name" "Notes" "Other Address PO Box" "Spouse" "Web Page" "Personal Web Page"))
   "Linkedin export in the Outlook csv format.")
 
+
 (defvar bbdb3-csv-import-mapping-table nil
   "The table which maps bbdb3 fields to csv fields.
 Use the default as an example to map non-thunderbird data.
@@ -175,30 +176,30 @@ Defaults to current buffer."
                           ;; http://www.mail-archive.com/bbdb-info%40lists.sourceforge.net/msg06388.html
                           (concat (or first middle) " " (or middle last) (when (and first middle) (concat " " last) ))
                         (or name first middle last ""))))
-              (phone (rd (lambda (elem)
-                           (let ((data (assoc-plus elem csv-record)))
-                             (if data (vconcat (list elem data)))))
+              (phone (rd (lambda (mapping-elem)
+                           (let ((data (assoc-plus mapping-elem csv-record)))
+                             (if data (vconcat (list mapping-elem data)))))
                          (field-map "phone")))
-              (xfields (rd (lambda (field)
-                             (let ((value (assoc-plus field csv-record)))
+              (xfields (rd (lambda (mapping-elem)
+                             (let ((value (assoc-plus mapping-elem csv-record)))
                                (when value
-                                 (while (string-match " " field)
+                                 (while (string-match " " mapping-elem)
                                    ;; turn csv field names into symbols for extra fields
-                                   (setq field (replace-match "" nil nil field)))
-                                 (cons (make-symbol (downcase field)) value))))
+                                   (setq mapping-elem (replace-match "" nil nil mapping-elem)))
+                                 (cons (make-symbol (downcase mapping-elem)) value))))
                            (field-map "xfields")))
-              (address (rd (lambda (x)
-                             (let ((address-lines (mapcar-assoc (caadr x)))
-                                   (address-data (mapcar-assoc (cdadr x))))
+              (address (rd (lambda (mapping-elem)
+                             (let ((address-lines (mapcar-assoc (caadr mapping-elem)))
+                                   (address-data (mapcar-assoc (cdadr mapping-elem))))
                                ;; determine if non-nil and put together the  minimum set
                                (when (or (not (-all? '(lambda (arg) (zerop (length arg))) address-data))
                                          (not (-all? '(lambda (arg) (zerop (length arg))) address-lines)))
                                  (when (> 2 (length address-lines))
-                                   (setcdr (max 2 (nthcdr (-find-last-index (lambda (x) (not (null x)))
+                                   (setcdr (max 2 (nthcdr (-find-last-index (lambda (mapping-elem) (not (null mapping-elem)))
                                                                             address-lines)
                                                           address-lines)) nil))
-                                 (vconcat (list (car x)) (list address-lines) address-data))))
-                           (cdr (assoc "address" bbdb3-csv-import-mapping-table))))
+                                 (vconcat (list (car mapping-elem)) (list address-lines) address-data))))
+                           (field-map "address")))
               (mail (rd-assoc (field-map "mail")))
               (organization (rd-assoc (field-map "organization")))
               (affix (map-assoc "affix"))
