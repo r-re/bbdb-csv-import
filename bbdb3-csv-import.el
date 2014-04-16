@@ -31,7 +31,7 @@
 ;; dependencies: pcsv.el, dash.el, bbdb
 ;; These are available via marmalade/melpa or the internet
 ;;
-;; Add to init file or execute manually:
+;; Add to init file or execute manually as this may be a one time usage:
 ;; (load-file FILENAME-OF-THIS-FILE)
 ;; or
 ;; (add-to-list 'load-path DIRECTORY-CONTAINING-THIS-FILE)
@@ -41,6 +41,9 @@
 ;;
 ;; Backup or rename any existing ~/.bbdb and ~/.emacs.d/bbdb while testing that
 ;; the import works correctly.
+;;
+;; Assign bbdb3-csv-import-mapping-table to a mapping table. Some are predefined
+;; below, ie. bbdb3-csv-import-thunderbird.
 ;;
 ;; Simply call `bbdb3-csv-import-buffer' or
 ;; `bbdb3-csv-import-file'. Interactively they prompt for file/buffer. Use
@@ -83,12 +86,45 @@
                       "Work State"
                       "Work ZipCode"
                       "Work Country")))
-    ("organization" ("Organization"))
+    ("organization" "Organization")
     ("xfields" "Web Page 1" "Web Page 2" "Birth Year" "Birth Month"
      "Birth Day" "Department" "Custom 1" "Custom 2" "Custom 3"
-     "Custom 4" "Notes" "Job Title")))
+     "Custom 4" "Notes" "Job Title"))
+  "Thunderbird csv format")
 
-(defvar bbdb3-csv-import-mapping-table bbdb3-csv-import-thunderbird
+(defconst bbdb3-csv-import-linkedin
+  '(("firstname" "First Name")
+    ("lastname" "Last Name")
+    ("middlename" "Middle Name")
+    ("mail" "E-mail Address" "E-mail 2 Address" "E-mail 3 Address")
+    ("phone" "Assistant's Phone" "Business Fax" "Business Phone" "Business Phone 2" "Callback" "Car Phone" "Company Main Phone" "Home Fax" "Home Phone" "Home Phone 2" "ISDN" "Mobile Phone" "Other Fax" "Other Phone" "Pager" "Primary Phone" "Radio Phone" "TTY/TDD Phone" "Telex")
+    ("address"
+     ("business address" (("Business Street"
+                           "Business Street 2"
+                           "Business Street 3")
+                          "Business City"
+                          "Business State"
+                          "Business Postal Code"
+                          "Business Country"))
+     ("home address" (("Home Street"
+                       "Home Street 2"
+                       "Home Street 3")
+                      "Home City"
+                      "Home State"
+                      "Home Postal Code"
+                      "Home Country"))
+     ("other address" (("Other Street"
+                        "Other Street 2"
+                        "Other Street 3")
+                       "Other City"
+                       "Other State"
+                       "Other Postal Code"
+                       "Other Country")))
+    ("organization" "Company")
+    ("xfields" "Suffix" "Department" "Job Title" "Assistant's Name" "Birthday" "Manager's Name" "Notes" "Other Address PO Box" "Spouse" "Web Page" "Personal Web Page"))
+  "Linkedin export in the Outlook csv format.")
+
+(defvar bbdb3-csv-import-mapping-table nil
   "The table which maps bbdb3 fields to csv fields.
 Use the default as an example to map non-thunderbird data.
 Name used is firstname + lastname or name.
@@ -129,14 +165,16 @@ Defaults to current buffer."
            (map-assoc (field) (assoc-plus (car (field-map field)) csv-record)))
         
         (let ((name (let ((first (map-assoc "firstname"))
+                          (middle (map-assoc "middlename"))
                           (last (map-assoc "lastname"))
                           (name (map-assoc "name")))
-                      (if (and first last)
+                      ;; prioritize any combination of first middle last over just "name"
+                      (if (or (and first last) (and first middle) (and middle last))
                           ;; purely historical note.
                           ;; it works exactly the same but I don't use (cons first last) due to a bug
                           ;; http://www.mail-archive.com/bbdb-info%40lists.sourceforge.net/msg06388.html
-                          (concat first " " last)
-                        (or name first last ""))))
+                          (concat (or first middle) " " (or middle last) (when (and first middle) (concat " " last) ))
+                        (or name first middle last ""))))
               (phone (rd (lambda (elem)
                            (let ((data (assoc-plus elem csv-record)))
                              (if data (vconcat (list elem data)))))
@@ -190,3 +228,4 @@ Defaults to current buffer."
 (provide 'bbdb3-csv-import)
 
 ;;; bbdb3-csv-import.el ends here
+
