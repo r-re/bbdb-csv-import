@@ -126,7 +126,8 @@
 
 
 ;; note. PO Box and Extended Address are added as additional address street lines if they exist.
-;; If you don't like this, you can remove them. If you want some other special handling, it will need to be coded.
+;; If you don't like this, just delete them from this fiel.
+;; If you want some other special handling, it will need to be coded.
 (defconst bbdb3-csv-import-gmail
   '(("firstname" "Given Name")
     ("lastname" "Family Name")
@@ -161,12 +162,55 @@
      (repeat ("Custom Field 1 - Type" "Custom Field 1 - Value"))))
   "Gmail csv export format")
 
+
 (defconst bbdb3-csv-import-gmail-typed-email
   (append  (car (last bbdb3-csv-import-gmail)) '((repeat "E-mail 1 - Type")))
   "Like the first Gmail mapping, but use custom fields to store
    Gmail's email labels. This is separate because I assume most
    people don't use those labels and using the default labels
    would create useless custom fields.")
+
+(defconst bbdb3-csv-import-outlook-web-typed-email
+  (append  (car (last bbdb3-csv-import-outlook-web)) '((repeat "E-mail 1 - Type")))
+  "Like the previous var, but for outlook-web.
+Adds email labels as custom fields.")
+
+
+(defconst bbdb3-csv-import-outlook-web
+  '(("firstname" "First Name")
+    ("lastname" "Last Name")
+    ("middlename" "Middle Name")
+    ("mail" "E-mail Address" "E-mail 2 Address" "E-mail 3 Address")
+    ("phone"
+     "Assistant's Phone" "Business Fax" "Business Phone"
+     "Business Phone 2" "Callback" "Car Phone"
+     "Company Main Phone" "Home Fax" "Home Phone"
+     "Home Phone 2" "ISDN" "Mobile Phone"
+     "Other Fax" "Other Phone" "Pager"
+     "Primary Phone" "Radio Phone" "TTY/TDD Phone" "Telex")
+    ("address"
+     (("business address"
+       (("Business Street")
+        "Business City" "Business State"
+        "Business Postal Code" "Business Country"))
+      ("home address"
+       (("Home Street")
+        "Home City" "Home State"
+        "Home Postal Code" "Home Country"))
+      ("other address"
+       (("Other Street")
+        "Other City" "Other State"
+        "Other Postal Code" "Other Country"))))
+    ("organization" "Company")
+    ("xfields"
+     "Anniversary" "Family Name Yomi" "Given Name Yomi"
+     "Suffix" "Department" "Job Title" "Birthday" "Manager's Name" "Notes"
+     "Spouse" "Web Page"))
+  "Hotmail.com, outlook.com, live.com, etc.
+Based on 'Export for outlook.com and other services',
+not the export for Outlook 2010 and 2013.")
+
+
 
 (defvar bbdb3-csv-import-mapping-table nil
   "The table which maps bbdb3 fields to csv fields.
