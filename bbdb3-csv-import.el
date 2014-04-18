@@ -94,10 +94,6 @@
 (require 'bbdb-com)
 (eval-when-compile (require 'cl))
 
-(defvar bbdb3-csv-import-mapping-table bbdb3-csv-import-combined
-  "The table which maps bbdb3 fields to csv fields. The default should work for most cases.
-See the commentary section of this file for more details.
-")
 
 (defconst bbdb3-csv-import-thunderbird
   '(("firstname" "First Name")
@@ -199,12 +195,6 @@ See the commentary section of this file for more details.
    people don't use those labels and using the default labels
    would create useless custom fields.")
 
-(defconst bbdb3-csv-import-outlook-typed-email
-  (append  (car (last bbdb3-csv-import-outlook-web)) '((repeat "E-mail 1 - Type")))
-  "Like the previous var, but for outlook-web.
-Adds email labels as custom fields.")
-
-
 (defconst bbdb3-csv-import-outlook-web
   '(("firstname" "First Name")
     ("lastname" "Last Name")
@@ -238,6 +228,32 @@ Adds email labels as custom fields.")
   "Hotmail.com, outlook.com, live.com, etc.
 Based on 'Export for outlook.com and other services',
 not the export for Outlook 2010 and 2013.")
+
+(defconst bbdb3-csv-import-outlook-typed-email
+  (append  (car (last bbdb3-csv-import-outlook-web)) '((repeat "E-mail 1 - Type")))
+  "Like the previous var, but for outlook-web.
+Adds email labels as custom fields.")
+
+
+(defun bbdb3-csv-import-flatten1 (list)
+  "flatten LIST by 1 level."
+  (--reduce-from (if (consp it)
+                     (-concat acc it)
+                   (-snoc acc it))
+                 nil list))
+
+
+(defun bbdb3-csv-import-merge-map (root)
+  "Combine two root mappings."
+  (bbdb3-csv-import-flatten1
+   (list root
+         (-distinct
+          (append
+           (cdr (assoc root bbdb3-csv-import-thunderbird))
+           (cdr (assoc root bbdb3-csv-import-linkedin))
+           (cdr (assoc root bbdb3-csv-import-gmail))
+           (cdr (assoc root bbdb3-csv-import-outlook-web)))))))
+
 
 (defconst bbdb3-csv-import-combined
   (list
@@ -274,16 +290,9 @@ not the export for Outlook 2010 and 2013.")
    (bbdb3-csv-import-merge-map "organization")
    (bbdb3-csv-import-merge-map "xfields")))
 
-(defun bbdb3-csv-import-merge-map (root)
-  (bbdb3-csv-import-flatten1
-   (list root
-         (-distinct
-          (append
-           (cdr (assoc root bbdb3-csv-import-thunderbird))
-           (cdr (assoc root bbdb3-csv-import-linkedin))
-           (cdr (assoc root bbdb3-csv-import-gmail))
-           (cdr (assoc root bbdb3-csv-import-outlook-web)))))))
-
+(defvar bbdb3-csv-import-mapping-table bbdb3-csv-import-combined
+  "The table which maps bbdb3 fields to csv fields. The default should work for most cases.
+See the commentary section of this file for more details.")
 
 
 ;;;###autoload
@@ -291,7 +300,6 @@ not the export for Outlook 2010 and 2013.")
   "Parse and import csv file FILENAME to bbdb3."
   (interactive "fCSV file containg contact data: ")
   (bbdb3-csv-import-buffer (find-file-noselect filename)))
-
 
 ;;;###autoload
 (defun bbdb3-csv-import-buffer (&optional buffer-or-name) 
@@ -418,15 +426,7 @@ Defaults to current buffer."
           (bbdb-create-internal name affix aka organization mail phone address xfields t))))
     (setq bbdb-allow-duplicates initial-duplicate-value)))
 
-;;;###autoload
-(defun bbdb3-csv-import-flatten1 (list)
-  "flatten LIST by 1 level."
-  (--reduce-from (if (consp it)
-                     (-concat acc it)
-                   (-snoc acc it))
-                 nil list))
 
-;;;###autoload
 (defun bbdb3-csv-import-rd (func list)
   "like mapcar but don't build nil results into the resulting list"
   (--reduce-from (let ((funcreturn (funcall func it)))
@@ -435,7 +435,6 @@ Defaults to current buffer."
                      acc))
                  nil list))
 
-;;;###autoload
 (defun bbdb3-csv-import-assoc-plus (key list)
   "Like (cdr assoc ...) but turn an empty string result to nil."
   (let ((result (cdr (assoc key list))))
