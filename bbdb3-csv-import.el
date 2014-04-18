@@ -46,6 +46,8 @@
 ;; (setq bbdb3-csv-import-mapping-table bbdb3-csv-import-thunderbird)
 ;; (setq bbdb3-csv-import-mapping-table bbdb3-csv-import-gmail)
 ;; (setq bbdb3-csv-import-mapping-table bbdb3-csv-import-linkedin)
+;; (setq bbdb3-csv-import-mapping-table bbdb3-csv-import-outlook-web)
+;; 
 ;;
 ;; Simply call `bbdb3-csv-import-buffer' or
 ;; `bbdb3-csv-import-file'. Interactively they prompt for file/buffer. Use
@@ -63,7 +65,9 @@
 ;;   do M-x bbdb then .* then C-u * d on the beginning of a record.
 ;; - After changing a mapping table, don't forget to re-execute
 ;;   (setq bbdb3-csv-import-mapping-table ...) so that it propagates.
-;; 
+;;
+;; Todo: It would be nice if we would programatically or manually merge all the
+;; mapping tables, then we would not have to set one.
 
 (require 'pcsv)
 (require 'dash)
@@ -170,7 +174,7 @@
    people don't use those labels and using the default labels
    would create useless custom fields.")
 
-(defconst bbdb3-csv-import-outlook-web-typed-email
+(defconst bbdb3-csv-import-outlook-typed-email
   (append  (car (last bbdb3-csv-import-outlook-web)) '((repeat "E-mail 1 - Type")))
   "Like the previous var, but for outlook-web.
 Adds email labels as custom fields.")
@@ -198,7 +202,7 @@ Adds email labels as custom fields.")
         "Home City" "Home State"
         "Home Postal Code" "Home Country"))
       ("other address"
-       (("Other Street")
+       (("Other Street" "")
         "Other City" "Other State"
         "Other Postal Code" "Other Country"))))
     ("organization" "Company")
@@ -209,7 +213,6 @@ Adds email labels as custom fields.")
   "Hotmail.com, outlook.com, live.com, etc.
 Based on 'Export for outlook.com and other services',
 not the export for Outlook 2010 and 2013.")
-
 
 
 (defvar bbdb3-csv-import-mapping-table nil
@@ -299,7 +302,7 @@ Defaults to current buffer."
                       ;; need to be grouped in a list because they contain sublists that we
                       ;; don't want flattened. I've decided that is a better trade off than more
                       ;; complex code.
-                      (flatten1 (expand-repeats (cdr (assoc bbdb-arg bbdb3-csv-import-mapping-table)))))
+                      (flatten1 (expand-repeats (cdr (assoc root-mapping bbdb3-csv-import-mapping-table)))))
            (map-assoc (field)
                       ;; For mappings with just 1 simple csv-field, get it's data
                       (assoc-plus (car (map-bbdb3 field)) csv-record)))
@@ -330,7 +333,9 @@ Defaults to current buffer."
                              (let ((address-lines (mapcar-assoc (caadr mapping-elem)))
                                    (address-data (mapcar-assoc (cdadr mapping-elem)))
                                    (elem-name (car mapping-elem)))
-                               
+                               ;; outlook-web has 1 address line, bbdb requires 2
+                               (if (= (length address-lines) 1)
+                                   (setq address-lines (append address-lines '(""))))
                                (when (consp elem-name)
                                  (setq elem-name (cdr (assoc (car elem-name) csv-record))))
                                
