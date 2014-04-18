@@ -2,6 +2,7 @@
 
 ;; Copyright (C) 2014 by Ian Kelling
 
+;; Maintainer: Ian Kelling <ian@iankelling.org>
 ;; Author: Ian Kelling <ian@iankelling.org>
 ;; Created: 1 Apr 2014
 ;; Version: 1.0
@@ -23,8 +24,9 @@
 ;;; Commentary:
 
 ;; Importer of csv (comma separated value) text into Emacs’s bbdb database,
-;; version 3+. Programs such as Thunderbird, Gmail, Linkedin, and Outlook allow
-;; for exporting contact data as csv files. See ASynK for syncing bbdb/google/outlook.
+;; version 3+. Works out of the box with csv exported from Thunderbird, Gmail,
+;; Linkedin, Outlook.com/hotmail, and probably others. 
+;; Easily extensible to handle new formats. 
 
 ;;; Installation:
 ;;
@@ -39,40 +41,58 @@
 
 ;;; Usage:
 ;;
-;; Backup or rename any existing ~/.bbdb and ~/.emacs.d/bbdb while testing that
-;; the import works correctly.
+;; You may want to back up existing data in ~/.bbdb and ~/.emacs.d/bbdb in case
+;; you don't like the newly imported data.
 ;;
-;; Assign a mapping table. Predefined ones listed here:
+;; Simply M-x `bbdb3-csv-import-buffer' or `bbdb3-csv-import-file'.
+;; Interactively they prompt for file or buffer.
+;;
+;; Tested to work with thunderbird, gmail, linkedin, outlook.com/hotmail.com For
+;; those programs, if it's exporter has an option of what kind of csv format,
+;; choose it's own native format if available, if not, choose an outlook
+;; compatible format. If you're exporting from some other program, and its csv
+;; exporter claims outlook compatibility, there is a good chance it will work
+;; out of the box.
+;;
+;; If things don't work, you can probably fix it with a field mapping variable.
+;; By default, we use a combination of all predefined mappings, and look for
+;; every known field.  If you have data that is from something we've already
+;; tested, try using it's specific mapping table in case that works better.
+;; Here is a handy template to set each of the predefined mapping tables:
+;; 
+;; (setq bbdb3-csv-import-mapping-table bbdb3-csv-import-combined)
 ;; (setq bbdb3-csv-import-mapping-table bbdb3-csv-import-thunderbird)
 ;; (setq bbdb3-csv-import-mapping-table bbdb3-csv-import-gmail)
 ;; (setq bbdb3-csv-import-mapping-table bbdb3-csv-import-linkedin)
 ;; (setq bbdb3-csv-import-mapping-table bbdb3-csv-import-outlook-web)
 ;; 
+;; If you need to define your own mapping table, it should not be too hard. Use
+;; the existing tables as an example. Probably best to ignore the combined table
+;; as it is an unnecessary complexity when working on a new table. The doc
+;; string for `bbdb-create-internal' may also be useful. The test csv data &
+;; test version info within this project could also be helpful. Please send any
+;; new mapping tables to the maintainer listed in this file. The maintainer
+;; should be able to help with any issues and may create a new mapping table
+;; given sample data.
 ;;
-;; Simply call `bbdb3-csv-import-buffer' or
-;; `bbdb3-csv-import-file'. Interactively they prompt for file/buffer. Use
-;; non-interactively for no prompts.
-;;
-;; If you need to define your own mapping table, it should not be too hard.  Use
-;; the existing tables as an example, and perhaps the test data within this
-;; project. Please send any new mapping tables to the maintainer listed in this
-;; file. The maintainer should be able to help with any issues and may create a
-;; new mapping table given sample data.
-;;
-;; Tips for testing:
+;; Misc tips:
+;; - ASynK looks promising for syncing bbdb/google/outlook.
 ;; - bbdb doesn't work if you delete the bbdb database file in
 ;;   the middle of an emacs session. If you want to empty the current bbdb database,
 ;;   do M-x bbdb then .* then C-u * d on the beginning of a record.
 ;; - After changing a mapping table, don't forget to re-execute
 ;;   (setq bbdb3-csv-import-mapping-table ...) so that it propagates.
-;;
-;; Todo: It would be nice if we would programatically or manually merge all the
-;; mapping tables, then we would not have to set one.
+
 
 (require 'pcsv)
 (require 'dash)
 (require 'bbdb-com)
 (eval-when-compile (require 'cl))
+
+(defvar bbdb3-csv-import-mapping-table bbdb3-csv-import-combined
+  "The table which maps bbdb3 fields to csv fields. The default should work for most cases.
+See the commentary section of this file for more details.
+")
 
 (defconst bbdb3-csv-import-thunderbird
   '(("firstname" "First Name")
@@ -181,7 +201,7 @@ Adds email labels as custom fields.")
 
 
 (defconst bbdb3-csv-import-outlook-web
-  '(("firstname" "Display Name" "First Name")
+  '(("firstname" "First Name")
     ("lastname" "Last Name")
     ("middlename" "Middle Name")
     ("mail" "E-mail Address" "E-mail 2 Address" "E-mail 3 Address")
@@ -202,7 +222,7 @@ Adds email labels as custom fields.")
         "Home City" "Home State"
         "Home Postal Code" "Home Country"))
       ("other address"
-       (("Other Street" "")
+       (("Other Street")
         "Other City" "Other State"
         "Other Postal Code" "Other Country"))))
     ("organization" "Company")
@@ -214,18 +234,52 @@ Adds email labels as custom fields.")
 Based on 'Export for outlook.com and other services',
 not the export for Outlook 2010 and 2013.")
 
-;(defconst bbdb3-csv-import-combined)
+(defconst bbdb3-csv-import-combined
+  (list
+   (bbdb3-csv-import-merge-map "firstname")
+   (bbdb3-csv-import-merge-map "middlename")
+   (bbdb3-csv-import-merge-map "lastname")
+   (bbdb3-csv-import-merge-map "name")
+   (bbdb3-csv-import-merge-map "aka")
+   (bbdb3-csv-import-merge-map "mail")
+   (bbdb3-csv-import-merge-map "phone")
+   ;; manually combined the addresses. Because it was easier.
+   '("address"
+     (repeat (("Address 1 - Type")
+              (("Address 1 - Street" "Address 1 - PO Box" "Address 1 - Extended Address")
+               "Address 1 - City" "Address 1 - Region"
+               "Address 1 - Postal Code" "Address 1 - Country")))
+     (("business address"
+       (("Business Street" "Business Street 2" "Business Street 3")
+        "Business City" "Business State"
+        "Business Postal Code" "Business Country"))
+      ("home address"
+       (("Home Street" "Home Street 2" "Home Street 3"
+         "Home Address" "Home Address 2")
+        "Home City" "Home State"
+        "Home Postal Code" "Home ZipCode" "Home Country"))
+      ("work address"
+       (("Work Address" "Work Address 2")
+        "Work City" "Work State"
+        "Work ZipCode" "Work Country"))
+      ("other address"
+       (("Other Street" "Other Street 2" "Other Street 3")
+        "Other City" "Other State"
+        "Other Postal Code" "Other Country"))))
+   (bbdb3-csv-import-merge-map "organization")
+   (bbdb3-csv-import-merge-map "xfields")))
+
+(defun bbdb3-csv-import-merge-map (root)
+  (bbdb3-csv-import-flatten1
+   (list root
+         (-distinct
+          (append
+           (cdr (assoc root bbdb3-csv-import-thunderbird))
+           (cdr (assoc root bbdb3-csv-import-linkedin))
+           (cdr (assoc root bbdb3-csv-import-gmail))
+           (cdr (assoc root bbdb3-csv-import-outlook-web)))))))
 
 
-(defvar bbdb3-csv-import-mapping-table nil
-  "The table which maps bbdb3 fields to csv fields.
-Use the default as an example to map non-thunderbird data.
-Name used is firstname + lastname or name.
-After the car, all names should map to whatever csv
-field names are used in the first row of csv data.
-Many fields are optional. If you aren't sure if one is,
-best to just try it. The doc string for `bbdb-create-internal'
-may be useful for determining which fields are required.")
 
 ;;;###autoload
 (defun bbdb3-csv-import-file (filename)
@@ -257,7 +311,10 @@ Defaults to current buffer."
     ;; loop over the csv records
     (while (setq csv-record (map 'list 'cons csv-fields (pop csv-contents)))
       (cl-flet*
-          ((expand-repeats (list)
+          ((replace-num (num string)
+                        ;; in STRING, replace all groups of numbers with NUM
+                        (replace-regexp-in-string "[0-9]+" (number-to-string num) string))
+           (expand-repeats (list)
                            ;; return new list where elements from LIST in form
                            ;; (repeat elem1 ...) become ((elem1 ...) [(elem2 ...)] ...)
                            ;; For as many repeating numbered fields exist in the csv fields.
@@ -289,9 +346,6 @@ Defaults to current buffer."
            (rd-assoc (root)
                      ;; given ROOT, return a list of data, ignoring empty fields
                      (rd (lambda (elem) (assoc-plus elem csv-record)) (map-bbdb3 root)))
-           (mapcar-assoc (list)
-                         ;; given LIST of fields,return a list of data with nil in place of an empty field
-                         (mapcar (lambda (elem) (cdr (assoc elem csv-record))) list))
            (assoc-expand (e)
                          ;; E = data-field-name | (field-name-field data-field)
                          ;; get data from the csv-record and return
@@ -299,11 +353,8 @@ Defaults to current buffer."
                          (let ((data-name (if (consp e) (cdr (assoc (car e) csv-record)) e))
                                (data (assoc-plus (if (consp e) (cadr e) e) csv-record)))
                            (if data (list data-name data))))
-           (replace-num (num string)
-                        ;; in STRING, replace all groups of numbers with NUM
-                        (replace-regexp-in-string "[0-9]+" (number-to-string num) string))
            (map-assoc (field)
-                      ;; For mappings with just 1 simple csv-field, get it's data
+                      ;; For simple mappings, get a single result
                       (car (rd-assoc field))))
 
         (let ((name (let ((first (map-assoc "firstname"))
@@ -327,14 +378,23 @@ Defaults to current buffer."
                                (setq e (make-symbol (downcase e)))
                                (cons e (cadr list)))) ;; change from (a b) to (a . b)
                            (rd #'assoc-expand (map-bbdb3 "xfields"))))
-              (address (rd (lambda (mapping-elem)
+              (address (rd (lambda (e)
+                             
                              (let ((address-lines (rd (lambda (elem)
                                                         (assoc-plus elem csv-record))
-                                                      (caadr mapping-elem)))
-                                   (address-data (mapcar-assoc (cdadr mapping-elem)))
-                                   (elem-name (car mapping-elem)))
-                               (if (= (length address-lines) 1)
-                                   (setq address-lines (-snoc address-lines "")))
+                                                      (caadr e)))
+                                   ;; little bit of special handling so we can
+                                   ;; use the combined mapping
+                                   (address-data (--reduce-from (if (member it csv-fields)
+                                                                    (cons (cdr (assoc it csv-record)) acc)
+                                                                  acc)
+                                                                nil (cdadr e)))
+                                   (elem-name (car e)))
+                               (setq address-lines (nreverse address-lines))
+                               (setq address-data (nreverse address-data))
+                               ;; make it a list of at least 2 elements
+                               (setq address-lines (append address-lines
+                                                           (-repeat (- 2 (length address-lines)) "")))
                                (when (consp elem-name)
                                  (setq elem-name (cdr (assoc (car elem-name) csv-record))))
                                
@@ -353,6 +413,7 @@ Defaults to current buffer."
           (bbdb-create-internal name affix aka organization mail phone address xfields t))))
     (setq bbdb-allow-duplicates initial-duplicate-value)))
 
+;;;###autoload
 (defun bbdb3-csv-import-flatten1 (list)
   "flatten LIST by 1 level."
   (--reduce-from (if (consp it)
@@ -371,7 +432,7 @@ Defaults to current buffer."
 
 ;;;###autoload
 (defun bbdb3-csv-import-assoc-plus (key list)
-  "Like `assoc' but turn an empty string result to nil."
+  "Like (cdr assoc ...) but turn an empty string result to nil."
   (let ((result (cdr (assoc key list))))
     (when (not (string= "" result))
       result)))
