@@ -5,8 +5,10 @@
 ;; Maintainer: Ian Kelling <ian@iankelling.org>
 ;; Author: Ian Kelling <ian@iankelling.org>
 ;; Created: 1 Apr 2014
-;; Version: 1.0
+;; Version: 1.1
+;; Package-Requires: ((pcsv "1.3.3") (dash "2.5.0"))
 ;; Keywords: csv, util, bbdb
+;; Homepage: https://gitlab.com/iankelling/bbdb3-csv-import
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -30,14 +32,14 @@
 
 ;;; Installation:
 ;;
-;; dependencies: pcsv.el, dash.el, bbdb
-;; These are available via marmalade/melpa or the internet
-;;
-;; Add to init file or execute manually as this may be a one time usage:
-;; (load-file FILENAME-OF-THIS-FILE)
-;; or
-;; (add-to-list 'load-path DIRECTORY-CONTAINING-THIS-FILE)
+;; Install bbdb version 3+ (dunno exact min version)
+;; 
+;; If you used a package manager, just
+;; 
 ;; (require 'bbdb3-csv-import)
+;;
+;; Else, note the min versions of dependencies above in "Package-Requires:",
+;; and load this file.
 
 ;;; Usage:
 ;;
@@ -45,7 +47,7 @@
 ;; you don't like the newly imported data.
 ;;
 ;; Simply M-x `bbdb3-csv-import-buffer' or `bbdb3-csv-import-file'.
-;; Interactively they prompt for file or buffer.
+;; When called interactively, they prompt for file or buffer arguments.
 ;;
 ;; Tested to work with thunderbird, gmail, linkedin, outlook.com/hotmail.com For
 ;; those programs, if it's exporter has an option of what kind of csv format,
@@ -69,20 +71,23 @@
 ;; If you need to define your own mapping table, it should not be too hard. Use
 ;; the existing tables as an example. Probably best to ignore the combined table
 ;; as it is an unnecessary complexity when working on a new table. The doc
-;; string for `bbdb-create-internal' may also be useful. The test csv data &
-;; test version info within this project could also be helpful. Please send any
+;; string for `bbdb-create-internal' may also be useful. Please send any
 ;; new mapping tables to the maintainer listed in this file. The maintainer
 ;; should be able to help with any issues and may create a new mapping table
 ;; given sample data.
 ;;
-;; Misc tips:
+;; Misc tips/troubleshooting:
 ;; - ASynK looks promising for syncing bbdb/google/outlook.
+;; - The git repo contains a test folder with exactly tested version info and working
+;;   test data.
 ;; - bbdb doesn't work if you delete the bbdb database file in
 ;;   the middle of an emacs session. If you want to empty the current bbdb database,
 ;;   do M-x bbdb then .* then C-u * d on the beginning of a record.
 ;; - After changing a mapping table, don't forget to re-execute
 ;;   (setq bbdb3-csv-import-mapping-table ...) so that it propagates.
 
+
+;;; Code:
 
 (require 'pcsv)
 (require 'dash)
