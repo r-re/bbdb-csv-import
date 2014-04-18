@@ -304,7 +304,7 @@ Defaults to current buffer."
                         (replace-regexp-in-string "[0-9]+" (number-to-string num) string))
            (map-assoc (field)
                       ;; For mappings with just 1 simple csv-field, get it's data
-                      (assoc-plus (car (map-bbdb3 field)) csv-record)))
+                      (car (rd-assoc field))))
 
         (let ((name (let ((first (map-assoc "firstname"))
                           (middle (map-assoc "middlename"))
