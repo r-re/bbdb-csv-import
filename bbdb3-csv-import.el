@@ -181,7 +181,7 @@ Adds email labels as custom fields.")
 
 
 (defconst bbdb3-csv-import-outlook-web
-  '(("firstname" "First Name")
+  '(("firstname" "Display Name" "First Name")
     ("lastname" "Last Name")
     ("middlename" "Middle Name")
     ("mail" "E-mail Address" "E-mail 2 Address" "E-mail 3 Address")
@@ -213,6 +213,8 @@ Adds email labels as custom fields.")
   "Hotmail.com, outlook.com, live.com, etc.
 Based on 'Export for outlook.com and other services',
 not the export for Outlook 2010 and 2013.")
+
+;;(defconst bbdb3-csv-import-combined)
 
 
 (defvar bbdb3-csv-import-mapping-table nil
@@ -255,23 +257,7 @@ Defaults to current buffer."
     ;; loop over the csv records
     (while (setq csv-record (map 'list 'cons csv-fields (pop csv-contents)))
       (cl-flet*
-          ((rd-assoc (list)
-                     ;; given LIST of fields, return a list of data, ignoring empty fields
-                     (rd (lambda (elem) (assoc-plus elem csv-record)) list))
-           (mapcar-assoc (list)
-                         ;; given LIST of fields,return a list of data with nil in place of an empty field
-                         (mapcar (lambda (elem) (cdr (assoc elem csv-record))) list))
-           (assoc-expand (e)
-                         ;; E = data-field-name | (field-name-field data-field)
-                         ;; get data from the csv-record and return
-                         ;; (field-name data) or nil.
-                         (let ((data-name (if (consp e) (cdr (assoc (car e) csv-record)) e))
-                               (data (assoc-plus (if (consp e) (cadr e) e) csv-record)))
-                           (if data (list data-name data))))
-           (replace-num (num string)
-                        ;; in STRING, replace all groups of numbers with NUM
-                        (replace-regexp-in-string "[0-9]+" (number-to-string num) string))
-           (expand-repeats (list)
+          ((expand-repeats (list)
                            ;; return new list where elements from LIST in form
                            ;; (repeat elem1 ...) become ((elem1 ...) [(elem2 ...)] ...)
                            ;; For as many repeating numbered fields exist in the csv fields.
@@ -291,21 +277,34 @@ Defaults to current buffer."
                                                   (setq acc (cons (fun it) acc))))
                                               acc))
                                           nil list))
-           (map-bbdb3 (root-mapping)
-                      ;; ROOT-MAPPING = a root element from bbdb3-csv-import-mapping-table.
-                      ;;
-                      ;; Get the actual csv-fields, including variably repeated ones flattened
-                      ;; by one because potentially repeated fields are put in sub-lists so they
-                      ;; can be as one thing, but after they are, that extra depth is no longer
-                      ;; useful. This makes for a little quirk: address mappings without 'repeat
+           (map-bbdb3 (root)
+                      ;; ROOT = a root element from bbdb3-csv-import-mapping-table.
+                      ;; Get the actual csv-fields, including variably repeated ones. flattened
+                      ;; by one because repeated fields are put in sub-lists, but
+                      ;; after expanding them, that extra depth is no longer
+                      ;; useful. Small quirk: address mappings without 'repeat
                       ;; need to be grouped in a list because they contain sublists that we
-                      ;; don't want flattened. I've decided that is a better trade off than more
-                      ;; complex code.
-                      (flatten1 (expand-repeats (cdr (assoc root-mapping bbdb3-csv-import-mapping-table)))))
+                      ;; don't want flattened. Better this than more complex code.
+                      (flatten1 (expand-repeats (cdr (assoc root bbdb3-csv-import-mapping-table)))))
+           (rd-assoc (root)
+                     ;; given ROOT, return a list of data, ignoring empty fields
+                     (rd (lambda (elem) (assoc-plus elem csv-record)) (map-bbdb3 root)))
+           (mapcar-assoc (list)
+                         ;; given LIST of fields,return a list of data with nil in place of an empty field
+                         (mapcar (lambda (elem) (cdr (assoc elem csv-record))) list))
+           (assoc-expand (e)
+                         ;; E = data-field-name | (field-name-field data-field)
+                         ;; get data from the csv-record and return
+                         ;; (field-name data) or nil.
+                         (let ((data-name (if (consp e) (cdr (assoc (car e) csv-record)) e))
+                               (data (assoc-plus (if (consp e) (cadr e) e) csv-record)))
+                           (if data (list data-name data))))
+           (replace-num (num string)
+                        ;; in STRING, replace all groups of numbers with NUM
+                        (replace-regexp-in-string "[0-9]+" (number-to-string num) string))
            (map-assoc (field)
                       ;; For mappings with just 1 simple csv-field, get it's data
                       (assoc-plus (car (map-bbdb3 field)) csv-record)))
-        
 
         (let ((name (let ((first (map-assoc "firstname"))
                           (middle (map-assoc "middlename"))
@@ -318,7 +317,7 @@ Defaults to current buffer."
                           (concat (or first middle) " " (or middle last) (when (and first middle) (concat " " last) ))
                         (or name first middle last ""))))
               (phone (rd 'vconcat (rd #'assoc-expand (map-bbdb3 "phone"))))
-              (mail (rd-assoc (map-bbdb3 "mail")))
+              (mail (rd-assoc "mail"))
               (xfields (rd (lambda (list)
                              (let ((e (car list)))
                                (while (string-match "-" e)
@@ -347,9 +346,9 @@ Defaults to current buffer."
                                                           address-lines)) nil))
                                  (vconcat (list elem-name) (list address-lines) address-data))))
                            (map-bbdb3 "address")))
-              (organization (rd-assoc (map-bbdb3 "organization")))
+              (organization (rd-assoc "organization"))
               (affix (map-assoc "affix"))
-              (aka (rd-assoc (map-bbdb3 "aka"))))
+              (aka (rd-assoc "aka")))
           (bbdb-create-internal name affix aka organization mail phone address xfields t))))
     (setq bbdb-allow-duplicates initial-duplicate-value)))
 
