@@ -276,22 +276,21 @@ Defaults to current buffer."
                            ;; (repeat elem1 ...) become ((elem1 ...) [(elem2 ...)] ...)
                            ;; For as many repeating numbered fields exist in the csv fields.
                            ;; elem can be a string or a tree (a list with possibly lists inside it)
-                           (-reduce-from (lambda (acc arg)
-                                           (if (not (and (consp arg) (eq (car arg) 'repeat)))
-                                               (cons arg acc)
-                                             (setq arg (cdr arg))
-                                             (let* ((i 1)
-                                                    (first-field (car (flatten arg))))
-                                               (setq acc (cons arg acc))
-                                               ;; use first-field to test if there is another repetition.
-                                               (while (member (replace-num (setq i (1+ i)) first-field) csv-fields)
-                                                 (cl-labels ((fun (cell)
-                                                                  (if (consp cell)
-                                                                      (mapcar #'fun cell)
-                                                                    (replace-num i cell))))
-                                                   (setq acc (cons (fun arg) acc))))
-                                               acc))) nil list))
-           
+                           (--reduce-from (if (not (and (consp it) (eq (car it) 'repeat)))
+                                              (cons it acc)
+                                            (setq it (cdr it))
+                                            (let* ((i 1)
+                                                   (first-field (car (flatten it))))
+                                              (setq acc (cons it acc))
+                                              ;; use first-field to test if there is another repetition.
+                                              (while (member (replace-num (setq i (1+ i)) first-field) csv-fields)
+                                                (cl-labels ((fun (cell)
+                                                                 (if (consp cell)
+                                                                     (mapcar #'fun cell)
+                                                                   (replace-num i cell))))
+                                                  (setq acc (cons (fun it) acc))))
+                                              acc))
+                                          nil list))
            (map-bbdb3 (root-mapping)
                       ;; ROOT-MAPPING = a root element from bbdb3-csv-import-mapping-table.
                       ;;
@@ -340,11 +339,11 @@ Defaults to current buffer."
                                  (setq elem-name (cdr (assoc (car elem-name) csv-record))))
                                
                                ;; determine if non-nil and put together the  minimum set
-                               (when (or (not (-all? '(lambda (arg) (zerop (length arg))) address-data))
-                                         (not (-all? '(lambda (arg) (zerop (length arg))) address-lines)))
+                               (when (or (not (--all? (zerop (length it)) address-data))
+                                         (not (--all? (zerop (length it)) address-lines)))
                                  (when (> 2 (length address-lines))
-                                   (setcdr (max 2 (nthcdr (-find-last-index (lambda (mapping-elem) (not (null mapping-elem)))
-                                                                            address-lines)
+                                   (setcdr (max 2 (nthcdr (--find-last-index (not (null it))
+                                                                             address-lines)
                                                           address-lines)) nil))
                                  (vconcat (list elem-name) (list address-lines) address-data))))
                            (map-bbdb3 "address")))
@@ -357,21 +356,19 @@ Defaults to current buffer."
 
 (defun bbdb3-csv-import-flatten1 (list)
   "flatten LIST by 1 level."
-  (-reduce-from (lambda (acc elem)
-                  (if (consp elem)
-                      (-concat acc elem)
-                    (-snoc acc elem)))
-                nil list))
+  (--reduce-from (if (consp it)
+                     (-concat acc it)
+                   (-snoc acc it))
+                 nil list))
 
 ;;;###autoload
 (defun bbdb3-csv-import-rd (func list)
   "like mapcar but don't build nil results into the resulting list"
-  (-reduce-from (lambda (acc elem)
-                  (let ((funcreturn (funcall func elem)))
-                    (if funcreturn
-                        (cons funcreturn acc)
-                      acc)))
-                nil list))
+  (--reduce-from (let ((funcreturn (funcall func it)))
+                   (if funcreturn
+                       (cons funcreturn acc)
+                     acc))
+                 nil list))
 
 ;;;###autoload
 (defun bbdb3-csv-import-assoc-plus (key list)
