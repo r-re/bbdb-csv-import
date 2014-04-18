@@ -214,7 +214,7 @@ Adds email labels as custom fields.")
 Based on 'Export for outlook.com and other services',
 not the export for Outlook 2010 and 2013.")
 
-;;(defconst bbdb3-csv-import-combined)
+;(defconst bbdb3-csv-import-combined)
 
 
 (defvar bbdb3-csv-import-mapping-table nil
@@ -328,12 +328,13 @@ Defaults to current buffer."
                                (cons e (cadr list)))) ;; change from (a b) to (a . b)
                            (rd #'assoc-expand (map-bbdb3 "xfields"))))
               (address (rd (lambda (mapping-elem)
-                             (let ((address-lines (mapcar-assoc (caadr mapping-elem)))
+                             (let ((address-lines (rd (lambda (elem)
+                                                        (assoc-plus elem csv-record))
+                                                      (caadr mapping-elem)))
                                    (address-data (mapcar-assoc (cdadr mapping-elem)))
                                    (elem-name (car mapping-elem)))
-                               ;; outlook-web has 1 address line, bbdb requires 2
                                (if (= (length address-lines) 1)
-                                   (setq address-lines (append address-lines '(""))))
+                                   (setq address-lines (-snoc address-lines "")))
                                (when (consp elem-name)
                                  (setq elem-name (cdr (assoc (car elem-name) csv-record))))
                                
@@ -351,7 +352,6 @@ Defaults to current buffer."
               (aka (rd-assoc "aka")))
           (bbdb-create-internal name affix aka organization mail phone address xfields t))))
     (setq bbdb-allow-duplicates initial-duplicate-value)))
-
 
 (defun bbdb3-csv-import-flatten1 (list)
   "flatten LIST by 1 level."
