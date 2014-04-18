@@ -1,4 +1,4 @@
-;;; bbdb3-csv-import.el  --- import csv to bbdb version 3+ -*- lexical-binding: t -*-
+;;; bbdb3-csv-import.el  --- import csv to bbdb version 3+
 
 ;; Copyright (C) 2014 by Ian Kelling
 
