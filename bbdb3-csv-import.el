@@ -32,14 +32,12 @@
 
 ;;; Installation:
 ;;
-;; Install bbdb version 3+ (dunno exact min version)
-;; 
-;; If you used a package manager, just
+;; Install bbdb. If you installed this file with a package manager, just
 ;; 
 ;; (require 'bbdb3-csv-import)
 ;;
 ;; Else, note the min versions of dependencies above in "Package-Requires:",
-;; and load this file.
+;; and load this file. I don't know the exact minimum bbdb version.
 
 ;;; Usage:
 ;;
