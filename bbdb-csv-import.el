@@ -94,8 +94,7 @@
 
 
 (defconst bbdb-csv-import-thunderbird
-  '(("firstname" "First Name")
-    ("lastname" "Last Name")
+  '(("namelist" "First Name" "Last Name")
     ("name" "Display Name")
     ("aka" "Nickname")
     ("mail" "Primary Email" "Secondary Email")
@@ -116,9 +115,7 @@
   "Thunderbird csv format")
 
 (defconst bbdb-csv-import-linkedin
-  '(("firstname" "First Name")
-    ("lastname" "Last Name")
-    ("middlename" "Middle Name")
+  '(("namelist" "First Name" "Middle Name" "Last Name")
     ("mail" "E-mail Address" "E-mail 2 Address" "E-mail 3 Address")
     ("phone"
      "Assistant's Phone" "Business Fax" "Business Phone"
@@ -152,8 +149,7 @@
 ;; If you don't like this, just delete them from this fiel.
 ;; If you want some other special handling, it will need to be coded.
 (defconst bbdb-csv-import-gmail
-  '(("firstname" "Given Name")
-    ("lastname" "Family Name")
+  '(("namelist" "Given Name" "Family Name")
     ("name" "Name")
     ("mail" (repeat "E-mail 1 - Value"))
     ("phone" (repeat ("Phone 1 - Type" "Phone 1 - Value")))
@@ -194,9 +190,7 @@
    would create useless custom fields.")
 
 (defconst bbdb-csv-import-outlook-web
-  '(("firstname" "First Name")
-    ("lastname" "Last Name")
-    ("middlename" "Middle Name")
+  '(("namelist" "First Name" "Middle Name" "Last Name")
     ("mail" "E-mail Address" "E-mail 2 Address" "E-mail 3 Address")
     ("phone"
      "Assistant's Phone" "Business Fax" "Business Phone"
@@ -255,9 +249,8 @@ Adds email labels as custom fields.")
 
 (defconst bbdb-csv-import-combined
   (list
-   (bbdb-csv-import-merge-map "firstname")
-   (bbdb-csv-import-merge-map "middlename")
-   (bbdb-csv-import-merge-map "lastname")
+   ;; manually combined for proper ordering
+   '("namelist" "First Name" "Given Name" "Middle Name" "Last Name" "Family Name")
    (bbdb-csv-import-merge-map "name")
    (bbdb-csv-import-merge-map "aka")
    (bbdb-csv-import-merge-map "mail")
@@ -315,7 +308,6 @@ Defaults to current buffer."
     ;; convenient function names
     (fset 'rd 'bbdb-csv-import-rd)
     (fset 'assoc-plus 'bbdb-csv-import-assoc-plus)
-    (fset 'flatten1 'bbdb-csv-import-flatten1)
     ;; Easier to allow duplicates and handle them post import vs failing as
     ;; soon as we find one.
     (setq bbdb-allow-duplicates t)
@@ -330,30 +322,34 @@ Defaults to current buffer."
                            ;; (repeat elem1 ...) become ((elem1 ...) [(elem2 ...)] ...)
                            ;; For as many repeating numbered fields exist in the csv fields.
                            ;; elem can be a string or a tree (a list with possibly lists inside it)
-                           (--reduce-from (if (not (and (consp it) (eq (car it) 'repeat)))
-                                              (cons it acc)
-                                            (setq it (cdr it))
-                                            (let* ((i 1)
-                                                   (first-field (car (flatten it))))
-                                              (setq acc (cons it acc))
-                                              ;; use first-field to test if there is another repetition.
-                                              (while (member (replace-num (setq i (1+ i)) first-field) csv-fields)
-                                                (cl-labels ((fun (cell)
-                                                                 (if (consp cell)
-                                                                     (mapcar #'fun cell)
-                                                                   (replace-num i cell))))
-                                                  (setq acc (cons (fun it) acc))))
-                                              acc))
-                                          nil list))
+                           (--reduce-from
+                            (if (not (and (consp it) (eq (car it) 'repeat)))
+                                (cons it acc)
+                              (setq it (cdr it))
+                              (let* ((i 1)
+                                     (first-field (car (flatten it))))
+                                (setq acc (cons it acc))
+                                ;; use first-field to test if there is another repetition.
+                                (while (member
+                                        (replace-num (setq i (1+ i)) first-field)
+                                        csv-fields)
+                                  (cl-labels ((fun (cell)
+                                                   (if (consp cell)
+                                                       (mapcar #'fun cell)
+                                                     (replace-num i cell))))
+                                    (setq acc (cons (fun it) acc))))
+                                acc))
+                            nil list))
            (map-bbdb (root)
-                      ;; ROOT = a root element from bbdb-csv-import-mapping-table.
-                      ;; Get the actual csv-fields, including variably repeated ones. flattened
-                      ;; by one because repeated fields are put in sub-lists, but
-                      ;; after expanding them, that extra depth is no longer
-                      ;; useful. Small quirk: address mappings without 'repeat
-                      ;; need to be grouped in a list because they contain sublists that we
-                      ;; don't want flattened. Better this than more complex code.
-                      (flatten1 (expand-repeats (cdr (assoc root bbdb-csv-import-mapping-table)))))
+                     ;; ROOT = a root element from bbdb-csv-import-mapping-table.
+                     ;; Get the actual csv-fields, including variably repeated ones. flattened
+                     ;; by one because repeated fields are put in sub-lists, but
+                     ;; after expanding them, that extra depth is no longer
+                     ;; useful. Small quirk: address mappings without 'repeat
+                     ;; need to be grouped in a list because they contain sublists that we
+                     ;; don't want flattened. Better this than more complex code.
+                     (bbdb-csv-import-flatten1
+                      (expand-repeats (cdr (assoc root bbdb-csv-import-mapping-table)))))
            (rd-assoc (root)
                      ;; given ROOT, return a list of data, ignoring empty fields
                      (rd (lambda (elem) (assoc-plus elem csv-record)) (map-bbdb root)))
@@ -368,16 +364,11 @@ Defaults to current buffer."
                       ;; For simple mappings, get a single result
                       (car (rd-assoc field))))
 
-        (let ((name (let ((first (map-assoc "firstname"))
-                          (middle (map-assoc "middlename"))
-                          (last (map-assoc "lastname"))
-                          (name (map-assoc "name")))
-                      ;; prioritize any combination of first middle last over just "name"
-                      (if (or (and first last) (and first middle) (and middle last))
-                          ;; purely historical note.
-                          ;; using (cons first last) as argument works the same as (concat first " " last)
-                          (concat (or first middle) " " (or middle last) (when (and first middle) (concat " " last) ))
-                        (or name first middle last ""))))
+        (let ((name (let ((name (rd-assoc "namelist")))
+                      ;; prioritize any combination of first middle last over "name"
+                      (if (>= (length name) 2)
+                          (mapconcat 'identity name " ")
+                        (map-assoc "name"))))
               (phone (rd 'vconcat (rd #'assoc-expand (map-bbdb "phone"))))
               (mail (rd-assoc "mail"))
               (xfields (rd (lambda (list)
