@@ -94,12 +94,12 @@
 
 
 (defconst bbdb-csv-import-thunderbird
-  '(("namelist" "First Name" "Last Name")
-    ("name" "Display Name")
-    ("aka" "Nickname")
-    ("mail" "Primary Email" "Secondary Email")
-    ("phone" "Work Phone" "Home Phone" "Fax Number" "Pager Number" "Mobile Number")
-    ("address"
+  '((:namelist "First Name" "Last Name")
+    (:name "Display Name")
+    (:aka "Nickname")
+    (:mail "Primary Email" "Secondary Email")
+    (:phone "Work Phone" "Home Phone" "Fax Number" "Pager Number" "Mobile Number")
+    (:address
      (("home address"
        (("Home Address" "Home Address 2")
         "Home City" "Home State"
@@ -108,23 +108,23 @@
        (("Work Address" "Work Address 2")
         "Work City" "Work State"
         "Work ZipCode" "Work Country"))))
-    ("organization" "Organization")
-    ("xfields" "Web Page 1" "Web Page 2" "Birth Year" "Birth Month"
+    (:organization "Organization")
+    (:xfields "Web Page 1" "Web Page 2" "Birth Year" "Birth Month"
      "Birth Day" "Department" "Custom 1" "Custom 2" "Custom 3"
      "Custom 4" "Notes" "Job Title"))
   "Thunderbird csv format")
 
 (defconst bbdb-csv-import-linkedin
-  '(("namelist" "First Name" "Middle Name" "Last Name")
-    ("mail" "E-mail Address" "E-mail 2 Address" "E-mail 3 Address")
-    ("phone"
+  '((:namelist "First Name" "Middle Name" "Last Name")
+    (:mail "E-mail Address" "E-mail 2 Address" "E-mail 3 Address")
+    (:phone
      "Assistant's Phone" "Business Fax" "Business Phone"
      "Business Phone 2" "Callback" "Car Phone"
      "Company Main Phone" "Home Fax" "Home Phone"
      "Home Phone 2" "ISDN" "Mobile Phone"
      "Other Fax" "Other Phone" "Pager"
      "Primary Phone" "Radio Phone" "TTY/TDD Phone" "Telex")
-    ("address"
+    (:address
      (("business address"
        (("Business Street" "Business Street 2" "Business Street 3")
         "Business City" "Business State"
@@ -137,8 +137,8 @@
        (("Other Street" "Other Street 2" "Other Street 3")
         "Other City" "Other State"
         "Other Postal Code" "Other Country"))))
-    ("organization" "Company")
-    ("xfields"
+    (:organization "Company")
+    (:xfields
      "Suffix" "Department" "Job Title" "Assistant's Name"
      "Birthday" "Manager's Name" "Notes" "Other Address PO Box"
      "Spouse" "Web Page" "Personal Web Page"))
@@ -149,17 +149,17 @@
 ;; If you don't like this, just delete them from this fiel.
 ;; If you want some other special handling, it will need to be coded.
 (defconst bbdb-csv-import-gmail
-  '(("namelist" "Given Name" "Family Name")
-    ("name" "Name")
-    ("mail" (repeat "E-mail 1 - Value"))
-    ("phone" (repeat ("Phone 1 - Type" "Phone 1 - Value")))
-    ("address"
+  '((:namelist "Given Name" "Family Name")
+    (:name "Name")
+    (:mail (repeat "E-mail 1 - Value"))
+    (:phone (repeat ("Phone 1 - Type" "Phone 1 - Value")))
+    (:address
      (repeat (("Address 1 - Type")
               (("Address 1 - Street" "Address 1 - PO Box" "Address 1 - Extended Address")
                "Address 1 - City" "Address 1 - Region"
                "Address 1 - Postal Code" "Address 1 - Country"))))
-    ("organization" (repeat "Organization 1 - Name"))
-    ("xfields"
+    (:organization (repeat "Organization 1 - Name"))
+    (:xfields
      "Additional Name" "Yomi Name" "Given Name Yomi"
      "Additional Name Yomi" "Family Name Yomi" "Name Prefix"
      "Name Suffix" "Initials" "Nickname"
@@ -190,16 +190,16 @@
    would create useless custom fields.")
 
 (defconst bbdb-csv-import-outlook-web
-  '(("namelist" "First Name" "Middle Name" "Last Name")
-    ("mail" "E-mail Address" "E-mail 2 Address" "E-mail 3 Address")
-    ("phone"
+  '((:namelist "First Name" "Middle Name" "Last Name")
+    (:mail "E-mail Address" "E-mail 2 Address" "E-mail 3 Address")
+    (:phone
      "Assistant's Phone" "Business Fax" "Business Phone"
      "Business Phone 2" "Callback" "Car Phone"
      "Company Main Phone" "Home Fax" "Home Phone"
      "Home Phone 2" "ISDN" "Mobile Phone"
      "Other Fax" "Other Phone" "Pager"
      "Primary Phone" "Radio Phone" "TTY/TDD Phone" "Telex")
-    ("address"
+    (:address
      (("business address"
        (("Business Street")
         "Business City" "Business State"
@@ -212,8 +212,8 @@
        (("Other Street")
         "Other City" "Other State"
         "Other Postal Code" "Other Country"))))
-    ("organization" "Company")
-    ("xfields"
+    (:organization "Company")
+    (:xfields
      "Anniversary" "Family Name Yomi" "Given Name Yomi"
      "Suffix" "Department" "Job Title" "Birthday" "Manager's Name" "Notes"
      "Spouse" "Web Page"))
@@ -250,13 +250,13 @@ Adds email labels as custom fields.")
 (defconst bbdb-csv-import-combined
   (list
    ;; manually combined for proper ordering
-   '("namelist" "First Name" "Given Name" "Middle Name" "Last Name" "Family Name")
-   (bbdb-csv-import-merge-map "name")
-   (bbdb-csv-import-merge-map "aka")
-   (bbdb-csv-import-merge-map "mail")
-   (bbdb-csv-import-merge-map "phone")
+   '(:namelist "First Name" "Given Name" "Middle Name" "Last Name" "Family Name")
+   (bbdb-csv-import-merge-map :name)
+   (bbdb-csv-import-merge-map :aka)
+   (bbdb-csv-import-merge-map :mail)
+   (bbdb-csv-import-merge-map :phone)
    ;; manually combined the addresses. Because it was easier.
-   '("address"
+   '(:address
      (repeat (("Address 1 - Type")
               (("Address 1 - Street" "Address 1 - PO Box" "Address 1 - Extended Address")
                "Address 1 - City" "Address 1 - Region"
@@ -278,8 +278,8 @@ Adds email labels as custom fields.")
        (("Other Street" "Other Street 2" "Other Street 3")
         "Other City" "Other State"
         "Other Postal Code" "Other Country"))))
-   (bbdb-csv-import-merge-map "organization")
-   (bbdb-csv-import-merge-map "xfields")))
+   (bbdb-csv-import-merge-map :organization)
+   (bbdb-csv-import-merge-map :xfields)))
 
 (defvar bbdb-csv-import-mapping-table bbdb-csv-import-combined
   "The table which maps bbdb fields to csv fields. The default should work for most cases.
@@ -314,7 +314,8 @@ Defaults to current buffer."
     ;; loop over the csv records
     (while (setq csv-record (map 'list 'cons csv-fields (pop csv-contents)))
       (cl-flet*
-          ((replace-num (num string)
+          ((ca (key list) (cdr (assoc key list))) ;; utility function
+           (replace-num (num string)
                         ;; in STRING, replace all groups of numbers with NUM
                         (replace-regexp-in-string "[0-9]+" (number-to-string num) string))
            (expand-repeats (list)
@@ -349,7 +350,7 @@ Defaults to current buffer."
                      ;; need to be grouped in a list because they contain sublists that we
                      ;; don't want flattened. Better this than more complex code.
                      (bbdb-csv-import-flatten1
-                      (expand-repeats (cdr (assoc root bbdb-csv-import-mapping-table)))))
+                      (expand-repeats (ca root bbdb-csv-import-mapping-table))))
            (rd-assoc (root)
                      ;; given ROOT, return a list of data, ignoring empty fields
                      (rd (lambda (elem) (assoc-plus elem csv-record)) (map-bbdb root)))
@@ -357,20 +358,20 @@ Defaults to current buffer."
                          ;; E = data-field-name | (field-name-field data-field)
                          ;; get data from the csv-record and return
                          ;; (field-name data) or nil.
-                         (let ((data-name (if (consp e) (cdr (assoc (car e) csv-record)) e))
+                         (let ((data-name (if (consp e) (ca (car e) csv-record) e))
                                (data (assoc-plus (if (consp e) (cadr e) e) csv-record)))
                            (if data (list data-name data))))
            (map-assoc (field)
                       ;; For simple mappings, get a single result
                       (car (rd-assoc field))))
 
-        (let ((name (let ((name (rd-assoc "namelist")))
-                      ;; prioritize any combination of first middle last over "name"
+        (let ((name (let ((name (rd-assoc :namelist)))
+                      ;; prioritize any combination of first middle last over :name
                       (if (>= (length name) 2)
                           (mapconcat 'identity name " ")
-                        (map-assoc "name"))))
-              (phone (rd 'vconcat (rd #'assoc-expand (map-bbdb "phone"))))
-              (mail (rd-assoc "mail"))
+                        (map-assoc :name))))
+              (phone (rd 'vconcat (rd #'assoc-expand (map-bbdb :phone))))
+              (mail (rd-assoc :mail))
               (xfields (rd (lambda (list)
                              (let ((e (car list)))
                                (while (string-match "-" e)
@@ -379,7 +380,7 @@ Defaults to current buffer."
                                  (setq e (replace-match "-" nil nil e)))
                                (setq e (make-symbol (downcase e)))
                                (cons e (cadr list)))) ;; change from (a b) to (a . b)
-                           (rd #'assoc-expand (map-bbdb "xfields"))))
+                           (rd #'assoc-expand (map-bbdb :xfields))))
               (address (rd (lambda (e)
                              
                              (let ((address-lines (rd (lambda (elem)
@@ -388,7 +389,7 @@ Defaults to current buffer."
                                    ;; little bit of special handling so we can
                                    ;; use the combined mapping
                                    (address-data (--reduce-from (if (member it csv-fields)
-                                                                    (cons (cdr (assoc it csv-record)) acc)
+                                                                    (cons (ca it csv-record) acc)
                                                                   acc)
                                                                 nil (cdadr e)))
                                    (elem-name (car e)))
@@ -398,7 +399,7 @@ Defaults to current buffer."
                                (setq address-lines (append address-lines
                                                            (-repeat (- 2 (length address-lines)) "")))
                                (when (consp elem-name)
-                                 (setq elem-name (cdr (assoc (car elem-name) csv-record))))
+                                 (setq elem-name (ca (car elem-name) csv-record)))
                                
                                ;; determine if non-nil and put together the  minimum set
                                (when (or (not (--all? (zerop (length it)) address-data))
@@ -408,10 +409,10 @@ Defaults to current buffer."
                                                                              address-lines)
                                                           address-lines)) nil))
                                  (vconcat (list elem-name) (list address-lines) address-data))))
-                           (map-bbdb "address")))
-              (organization (rd-assoc "organization"))
+                           (map-bbdb :address)))
+              (organization (rd-assoc :organization))
               (affix (map-assoc "affix"))
-              (aka (rd-assoc "aka")))
+              (aka (rd-assoc :aka)))
           (bbdb-create-internal name affix aka organization mail phone address xfields t))))
     (setq bbdb-allow-duplicates initial-duplicate-value)))
 
