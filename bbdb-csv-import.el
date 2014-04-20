@@ -56,18 +56,21 @@
 ;;
 ;; If things don't work, you can probably fix it with a custom field mapping
 ;; variable. It should not be too hard. Use the existing tables as an
-;; example. By default, we use a combination of all predefined mappings, and
-;; look for every known field, but it is probably best to avoid that kind of
-;; table when setting up your own as it is an unnecessary complexity in this
-;; case.  If you have a problem with data from a supported export program, start
+;; example. By default, we use a combination of most predefined mappings, and
+;; look for all of their fields, but it is probably best to avoid that kind of
+;; table when setting up your own as it is an unnecessary complexity in that
+;; case. If you have a problem with data from a supported export program, start
 ;; by testing its specific mapping table instead of the combined one. Here is a
-;; handy template to set each of the predefined mapping tables:
+;; handy template to set each of the predefined mapping tables if you would
+;; rather avoid the configure interface:
 ;; 
 ;; (setq bbdb-csv-import-mapping-table bbdb-csv-import-combined)
 ;; (setq bbdb-csv-import-mapping-table bbdb-csv-import-thunderbird)
 ;; (setq bbdb-csv-import-mapping-table bbdb-csv-import-gmail)
+;; (setq bbdb-csv-import-mapping-table bbdb-csv-import-gmail-typed-email)
 ;; (setq bbdb-csv-import-mapping-table bbdb-csv-import-linkedin)
 ;; (setq bbdb-csv-import-mapping-table bbdb-csv-import-outlook-web)
+;; (setq bbdb-csv-import-mapping-table bbdb-csv-import-outlook-typed-email)
 ;; 
 ;; In addition to the examples, the doc string for `bbdb-create-internal' may
 ;; also be useful. Please send any new mapping tables to the maintainer listed
@@ -81,12 +84,11 @@
 ;; - bbdb doesn't work if you delete the bbdb database file in
 ;;   the middle of an emacs session. If you want to empty the current bbdb database,
 ;;   do M-x bbdb then .* then C-u * d on the beginning of a record.
-;; - After changing a mapping table, don't forget to re-execute
+;; - After changing a mapping table variable, don't forget to re-execute
 ;;   (setq bbdb-csv-import-mapping-table ...) so that it propagates.
 
 
 ;;; Code:
-
 (require 'pcsv)
 (require 'dash)
 (require 'bbdb-com)
@@ -110,12 +112,13 @@
         "Work ZipCode" "Work Country"))))
     (:organization "Organization")
     (:xfields "Web Page 1" "Web Page 2" "Birth Year" "Birth Month"
-     "Birth Day" "Department" "Custom 1" "Custom 2" "Custom 3"
-     "Custom 4" "Notes" "Job Title"))
+              "Birth Day" "Department" "Custom 1" "Custom 2" "Custom 3"
+              "Custom 4" "Notes" "Job Title"))
   "Thunderbird csv format")
 
 (defconst bbdb-csv-import-linkedin
   '((:namelist "First Name" "Middle Name" "Last Name")
+    (:affix "Suffix")
     (:mail "E-mail Address" "E-mail 2 Address" "E-mail 3 Address")
     (:phone
      "Assistant's Phone" "Business Fax" "Business Phone"
@@ -139,18 +142,17 @@
         "Other Postal Code" "Other Country"))))
     (:organization "Company")
     (:xfields
-     "Suffix" "Department" "Job Title" "Assistant's Name"
+     "Department" "Job Title" "Assistant's Name"
      "Birthday" "Manager's Name" "Notes" "Other Address PO Box"
      "Spouse" "Web Page" "Personal Web Page"))
   "Linkedin export in the Outlook csv format.")
 
 
-;; note. PO Box and Extended Address are added as additional address street lines if they exist.
-;; If you don't like this, just delete them from this fiel.
-;; If you want some other special handling, it will need to be coded.
 (defconst bbdb-csv-import-gmail
   '((:namelist "Given Name" "Family Name")
     (:name "Name")
+    (:affix "Name Prefix" "Name Suffix")
+    (:aka "Nickname")
     (:mail (repeat "E-mail 1 - Value"))
     (:phone (repeat ("Phone 1 - Type" "Phone 1 - Value")))
     (:address
@@ -161,15 +163,15 @@
     (:organization (repeat "Organization 1 - Name"))
     (:xfields
      "Additional Name" "Yomi Name" "Given Name Yomi"
-     "Additional Name Yomi" "Family Name Yomi" "Name Prefix"
-     "Name Suffix" "Initials" "Nickname"
-     "Short Name" "Maiden Name" "Birthday"
+     "Additional Name Yomi" "Family Name Yomi" 
+     "Initials" "Short Name" "Maiden Name" "Birthday"
      "Gender" "Location" "Billing Information"
      "Directory Server" "Mileage" "Occupation"
      "Hobby" "Sensitivity" "Priority"
      "Subject" "Notes" "Group Membership"
-     ;; Gmail wouldn't let me add more than 1 organization, but no harm in
-     ;; looking for multiple since the field name implies the possibility.
+     ;; Gmail wouldn't let me add more than 1 organization in its web interface,
+     ;; but no harm in looking for multiple since the field name implies the
+     ;; possibility.
      (repeat  
       "Organization 1 - Type" "Organization 1 - Yomi Name"
       "Organization 1 - Title" "Organization 1 - Department"
@@ -179,7 +181,13 @@
      (repeat ("Website 1 - Type" "Website 1 - Value"))
      (repeat ("Event 1 - Type" "Event 1 - Value"))
      (repeat ("Custom Field 1 - Type" "Custom Field 1 - Value"))))
-  "Gmail csv export format")
+  "Gmail csv export format. Note some fields don't map perfectly,
+feel free to modify them as you wish. \"PO Box\" and \"Extended
+Address\" are added as additional address street lines if they
+exist. Some special name fields are made custom instead of put in
+name, which gets a single string. We map Gmail's \"Name Prefix\"
+and \"Name Suffix\" to bbdb's affix (a list of strings). We lose
+the prefix/suffix label, but those are usually obvious.")
 
 
 (defconst bbdb-csv-import-gmail-typed-email
@@ -192,6 +200,7 @@
 (defconst bbdb-csv-import-outlook-web
   '((:namelist "First Name" "Middle Name" "Last Name")
     (:mail "E-mail Address" "E-mail 2 Address" "E-mail 3 Address")
+    (:affix "Suffix")
     (:phone
      "Assistant's Phone" "Business Fax" "Business Phone"
      "Business Phone 2" "Callback" "Car Phone"
@@ -215,7 +224,7 @@
     (:organization "Company")
     (:xfields
      "Anniversary" "Family Name Yomi" "Given Name Yomi"
-     "Suffix" "Department" "Job Title" "Birthday" "Manager's Name" "Notes"
+     "Department" "Job Title" "Birthday" "Manager's Name" "Notes"
      "Spouse" "Web Page"))
   "Hotmail.com, outlook.com, live.com, etc.
 Based on 'Export for outlook.com and other services',
@@ -223,12 +232,12 @@ not the export for Outlook 2010 and 2013.")
 
 (defconst bbdb-csv-import-outlook-typed-email
   (append  (car (last bbdb-csv-import-outlook-web)) '((repeat "E-mail 1 - Type")))
-  "Like the previous var, but for outlook-web.
+  "Like bbdb-csv-import-gmail-typed-email, but for outlook-web.
 Adds email labels as custom fields.")
 
 
 (defun bbdb-csv-import-flatten1 (list)
-  "flatten LIST by 1 level."
+  "Flatten LIST by 1 level."
   (--reduce-from (if (consp it)
                      (-concat acc it)
                    (-snoc acc it))
@@ -236,7 +245,7 @@ Adds email labels as custom fields.")
 
 
 (defun bbdb-csv-import-merge-map (root)
-  "Combine two root mappings."
+  "Combine two root mappings for making a combined mapping."
   (bbdb-csv-import-flatten1
    (list root
          (-distinct
@@ -252,6 +261,7 @@ Adds email labels as custom fields.")
    ;; manually combined for proper ordering
    '(:namelist "First Name" "Given Name" "Middle Name" "Last Name" "Family Name")
    (bbdb-csv-import-merge-map :name)
+   (bbdb-csv-import-merge-map :affix)
    (bbdb-csv-import-merge-map :aka)
    (bbdb-csv-import-merge-map :mail)
    (bbdb-csv-import-merge-map :phone)
@@ -281,10 +291,54 @@ Adds email labels as custom fields.")
    (bbdb-csv-import-merge-map :organization)
    (bbdb-csv-import-merge-map :xfields)))
 
-(defvar bbdb-csv-import-mapping-table bbdb-csv-import-combined
+(defcustom bbdb-csv-import-mapping-table bbdb-csv-import-combined
   "The table which maps bbdb fields to csv fields. The default should work for most cases.
-See the commentary section of this file for more details.")
+See the commentary section of this file for more details."
+  :group 'bbdb-csv-import
+  :type 'symbol)
 
+
+(defun  bbdb-csv-import-expand-repeats (csv-fields list)
+  "Return new list where elements from LIST in form (repeat elem1 ...)
+become ((elem1 ...) [(elem2 ...)] ...) for as many repeating
+numbered fields exist in the csv fields. elem can be a string or
+a tree (a list with lists inside it)"
+  (cl-flet ((replace-num (num string)
+                         ;; in STRING, replace all groups of numbers with NUM
+                         (replace-regexp-in-string "[0-9]+"
+                                                   (number-to-string num)
+                                                   string)))
+    (--reduce-from
+     (if (not (and (consp it) (eq (car it) 'repeat)))
+         (cons it acc)
+       (setq it (cdr it))
+       (let* ((i 1)
+              (first-field (car (flatten it))))
+         (setq acc (cons it acc))
+         ;; use first-field to test if there is another repetition.
+         (while (member
+                 (replace-num (setq i (1+ i)) first-field)
+                 csv-fields)
+           (cl-labels ((fun (cell)
+                            (if (consp cell)
+                                (mapcar #'fun cell)
+                              (replace-num i cell))))
+             (setq acc (cons (fun it) acc))))
+         acc))
+     nil list)))
+
+(defun bbdb-csv-import-map-bbdb (csv-fields root)
+  "ROOT is a root element from bbdb-csv-import-mapping-table. Get
+the csv-fields for root in the mapping format, including variably
+repeated ones. Flatten by one because repeated fields are put in
+sub-lists, but after expanding them, that extra depth is no
+longer useful. Small trade off: address mappings without 'repeat need
+to be grouped in a list because they contain sublists that we
+don't want flattened."
+  (bbdb-csv-import-flatten1
+   (bbdb-csv-import-expand-repeats
+    csv-fields
+    (cdr (assoc root bbdb-csv-import-mapping-table)))))
 
 ;;;###autoload
 (defun bbdb-csv-import-file (filename)
@@ -300,78 +354,69 @@ Defaults to current buffer."
   (interactive "bBuffer containing CSV contact data: ")
   (when (null bbdb-csv-import-mapping-table)
     (error "error: `bbdb-csv-import-mapping-table' is nil. Please set it and rerun."))
-  (let* ((csv-fields (pcsv-parse-buffer (get-buffer (or buffer-or-name (current-buffer)))))
-         (csv-contents (cdr csv-fields))
-         (csv-fields (car csv-fields))
+  (let* ((csv-data (pcsv-parse-buffer (get-buffer (or buffer-or-name (current-buffer)))))
+         (csv-fields (car csv-data))
+         (csv-data (cdr csv-data))
          (initial-duplicate-value bbdb-allow-duplicates)
-         csv-record rd assoc-plus flatten1)
+         csv-record rd assoc-plus map-bbdb)
     ;; convenient function names
     (fset 'rd 'bbdb-csv-import-rd)
     (fset 'assoc-plus 'bbdb-csv-import-assoc-plus)
-    ;; Easier to allow duplicates and handle them post import vs failing as
-    ;; soon as we find one.
+    (fset 'map-bbdb (-partial 'bbdb-csv-import-map-bbdb csv-fields))
+    ;; better to allow duplicates rather than fail
     (setq bbdb-allow-duplicates t)
     ;; loop over the csv records
-    (while (setq csv-record (map 'list 'cons csv-fields (pop csv-contents)))
+    (while (setq csv-record (map 'list 'cons csv-fields (pop csv-data)))
       (cl-flet*
           ((ca (key list) (cdr (assoc key list))) ;; utility function
-           (replace-num (num string)
-                        ;; in STRING, replace all groups of numbers with NUM
-                        (replace-regexp-in-string "[0-9]+" (number-to-string num) string))
-           (expand-repeats (list)
-                           ;; return new list where elements from LIST in form
-                           ;; (repeat elem1 ...) become ((elem1 ...) [(elem2 ...)] ...)
-                           ;; For as many repeating numbered fields exist in the csv fields.
-                           ;; elem can be a string or a tree (a list with possibly lists inside it)
-                           (--reduce-from
-                            (if (not (and (consp it) (eq (car it) 'repeat)))
-                                (cons it acc)
-                              (setq it (cdr it))
-                              (let* ((i 1)
-                                     (first-field (car (flatten it))))
-                                (setq acc (cons it acc))
-                                ;; use first-field to test if there is another repetition.
-                                (while (member
-                                        (replace-num (setq i (1+ i)) first-field)
-                                        csv-fields)
-                                  (cl-labels ((fun (cell)
-                                                   (if (consp cell)
-                                                       (mapcar #'fun cell)
-                                                     (replace-num i cell))))
-                                    (setq acc (cons (fun it) acc))))
-                                acc))
-                            nil list))
-           (map-bbdb (root)
-                     ;; ROOT = a root element from bbdb-csv-import-mapping-table.
-                     ;; Get the actual csv-fields, including variably repeated ones. flattened
-                     ;; by one because repeated fields are put in sub-lists, but
-                     ;; after expanding them, that extra depth is no longer
-                     ;; useful. Small quirk: address mappings without 'repeat
-                     ;; need to be grouped in a list because they contain sublists that we
-                     ;; don't want flattened. Better this than more complex code.
-                     (bbdb-csv-import-flatten1
-                      (expand-repeats (ca root bbdb-csv-import-mapping-table))))
            (rd-assoc (root)
                      ;; given ROOT, return a list of data, ignoring empty fields
                      (rd (lambda (elem) (assoc-plus elem csv-record)) (map-bbdb root)))
            (assoc-expand (e)
                          ;; E = data-field-name | (field-name-field data-field)
-                         ;; get data from the csv-record and return
-                         ;; (field-name data) or nil.
+                         ;; get data from the csv-record and return (field-name data) or nil.
                          (let ((data-name (if (consp e) (ca (car e) csv-record) e))
                                (data (assoc-plus (if (consp e) (cadr e) e) csv-record)))
-                           (if data (list data-name data))))
-           (map-assoc (field)
-                      ;; For simple mappings, get a single result
-                      (car (rd-assoc field))))
-
+                           (if data (list data-name data)))))
+        ;; set the arguments to bbdb-create-internal, then call it, the end.
         (let ((name (let ((name (rd-assoc :namelist)))
                       ;; prioritize any combination of first middle last over :name
                       (if (>= (length name) 2)
                           (mapconcat 'identity name " ")
-                        (map-assoc :name))))
-              (phone (rd 'vconcat (rd #'assoc-expand (map-bbdb :phone))))
+                        (car (rd-assoc :name)))))
+              (affix (rd-assoc :affix))
+              (aka (rd-assoc :aka))
+              (organization (rd-assoc :organization))
               (mail (rd-assoc :mail))
+              (phone (rd 'vconcat (rd #'assoc-expand (map-bbdb :phone))))
+              (address (rd (lambda (e)
+                             
+                             (let ((al (rd (lambda (elem) ;; al = address lines
+                                             (assoc-plus elem csv-record))
+                                           (caadr e)))
+                                   ;; to use bbdb-csv-import-combined, we can't mapcar
+                                   (address-data (--reduce-from (if (member it csv-fields)
+                                                                    (cons (ca it csv-record) acc)
+                                                                  acc)
+                                                                nil (cdadr e)))
+                                   (elem-name (car e)))
+                               (setq al (nreverse al))
+                               (setq address-data (nreverse address-data))
+                               ;; make it a list of at least 2 elements
+                               (setq al (append al
+                                                (-repeat (- 2 (length al)) "")))
+                               (when (consp elem-name)
+                                 (setq elem-name (ca (car elem-name) csv-record)))
+                               
+                               ;; determine if non-nil and put together the  minimum set
+                               (when (or (not (--all? (zerop (length it)) address-data))
+                                         (not (--all? (zerop (length it)) al)))
+                                 (when (> 2 (length al))
+                                   (setcdr (max 2 (nthcdr (--find-last-index (not (null it))
+                                                                             al)
+                                                          al)) nil))
+                                 (vconcat (list elem-name) (list al) address-data))))
+                           (map-bbdb :address)))
               (xfields (rd (lambda (list)
                              (let ((e (car list)))
                                (while (string-match "-" e)
@@ -380,42 +425,9 @@ Defaults to current buffer."
                                  (setq e (replace-match "-" nil nil e)))
                                (setq e (make-symbol (downcase e)))
                                (cons e (cadr list)))) ;; change from (a b) to (a . b)
-                           (rd #'assoc-expand (map-bbdb :xfields))))
-              (address (rd (lambda (e)
-                             
-                             (let ((address-lines (rd (lambda (elem)
-                                                        (assoc-plus elem csv-record))
-                                                      (caadr e)))
-                                   ;; little bit of special handling so we can
-                                   ;; use the combined mapping
-                                   (address-data (--reduce-from (if (member it csv-fields)
-                                                                    (cons (ca it csv-record) acc)
-                                                                  acc)
-                                                                nil (cdadr e)))
-                                   (elem-name (car e)))
-                               (setq address-lines (nreverse address-lines))
-                               (setq address-data (nreverse address-data))
-                               ;; make it a list of at least 2 elements
-                               (setq address-lines (append address-lines
-                                                           (-repeat (- 2 (length address-lines)) "")))
-                               (when (consp elem-name)
-                                 (setq elem-name (ca (car elem-name) csv-record)))
-                               
-                               ;; determine if non-nil and put together the  minimum set
-                               (when (or (not (--all? (zerop (length it)) address-data))
-                                         (not (--all? (zerop (length it)) address-lines)))
-                                 (when (> 2 (length address-lines))
-                                   (setcdr (max 2 (nthcdr (--find-last-index (not (null it))
-                                                                             address-lines)
-                                                          address-lines)) nil))
-                                 (vconcat (list elem-name) (list address-lines) address-data))))
-                           (map-bbdb :address)))
-              (organization (rd-assoc :organization))
-              (affix (map-assoc "affix"))
-              (aka (rd-assoc :aka)))
+                           (rd #'assoc-expand (map-bbdb :xfields)))))
           (bbdb-create-internal name affix aka organization mail phone address xfields t))))
     (setq bbdb-allow-duplicates initial-duplicate-value)))
-
 
 (defun bbdb-csv-import-rd (func list)
   "like mapcar but don't build nil results into the resulting list"
@@ -430,8 +442,6 @@ Defaults to current buffer."
   (let ((result (cdr (assoc key list))))
     (when (not (string= "" result))
       result)))
-
-
 
 (provide 'bbdb-csv-import)
 
