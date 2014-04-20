@@ -6,7 +6,7 @@
 ;; Author: Ian Kelling <ian@iankelling.org>
 ;; Created: 1 Apr 2014
 ;; Version: 1.1
-;; Package-Requires: ((pcsv "1.3.3") (dash "2.5.0"))
+;; Package-Requires: ((pcsv "1.3.3") (dash "2.5.0") (bbdb "20140412.1949"))
 ;; Keywords: csv, util, bbdb
 ;; Homepage: https://gitlab.com/iankelling/bbdb-csv-import
 
@@ -32,12 +32,12 @@
 
 ;;; Installation:
 ;;
-;; Install bbdb. If you installed this file with a package manager, just
+;; If you installed this file with a package manager, just
 ;; 
 ;; (require 'bbdb-csv-import)
 ;;
 ;; Else, note the min versions of dependencies above in "Package-Requires:",
-;; and load this file. I don't know the exact minimum bbdb version.
+;; and load this file. The exact minimum bbdb version is unknown, something 3+.
 
 ;;; Usage:
 ;;
@@ -54,11 +54,14 @@
 ;; exporter claims outlook compatibility, there is a good chance it will work
 ;; out of the box.
 ;;
-;; If things don't work, you can probably fix it with a field mapping variable.
-;; By default, we use a combination of all predefined mappings, and look for
-;; every known field.  If you have data that is from something we've already
-;; tested, try using it's specific mapping table in case that works better.
-;; Here is a handy template to set each of the predefined mapping tables:
+;; If things don't work, you can probably fix it with a custom field mapping
+;; variable. It should not be too hard. Use the existing tables as an
+;; example. By default, we use a combination of all predefined mappings, and
+;; look for every known field, but it is probably best to avoid that kind of
+;; table when setting up your own as it is an unnecessary complexity in this
+;; case.  If you have a problem with data from a supported export program, start
+;; by testing its specific mapping table instead of the combined one. Here is a
+;; handy template to set each of the predefined mapping tables:
 ;; 
 ;; (setq bbdb-csv-import-mapping-table bbdb-csv-import-combined)
 ;; (setq bbdb-csv-import-mapping-table bbdb-csv-import-thunderbird)
@@ -66,13 +69,10 @@
 ;; (setq bbdb-csv-import-mapping-table bbdb-csv-import-linkedin)
 ;; (setq bbdb-csv-import-mapping-table bbdb-csv-import-outlook-web)
 ;; 
-;; If you need to define your own mapping table, it should not be too hard. Use
-;; the existing tables as an example. Probably best to ignore the combined table
-;; as it is an unnecessary complexity when working on a new table. The doc
-;; string for `bbdb-create-internal' may also be useful. Please send any
-;; new mapping tables to the maintainer listed in this file. The maintainer
-;; should be able to help with any issues and may create a new mapping table
-;; given sample data.
+;; In addition to the examples, the doc string for `bbdb-create-internal' may
+;; also be useful. Please send any new mapping tables to the maintainer listed
+;; in this file. The maintainer should be able to help with any issues and may
+;; create a new mapping table given sample data.
 ;;
 ;; Misc tips/troubleshooting:
 ;; - ASynK looks promising for syncing bbdb/google/outlook.
