@@ -38,19 +38,20 @@
 ;;
 ;; Else, note the min versions of dependencies above in "Package-Requires:",
 ;; and load this file. The exact minimum bbdb version is unknown, something 3+.
-
-;;; Usage:
+;;
+;;; Basic Usage:
 ;;
 ;; You may want to back up existing data in ~/.bbdb and ~/.emacs.d/bbdb in case
 ;; you don't like the newly imported data.
 ;;
 ;; Simply M-x `bbdb-csv-import-buffer' or `bbdb-csv-import-file'.
 ;; When called interactively, they prompt for file or buffer arguments.
-;;
+
+;;; Advanced usage / notes:
 ;; Tested to work with thunderbird, gmail, linkedin, outlook.com/hotmail.com For
 ;; those programs, if it's exporter has an option of what kind of csv format,
 ;; choose it's own native format if available, if not, choose an outlook
-;; compatible format. If you're exporting from some other program, and its csv
+;; compatible format. If you're exporting from some other program and its csv
 ;; exporter claims outlook compatibility, there is a good chance it will work
 ;; out of the box.
 ;;
