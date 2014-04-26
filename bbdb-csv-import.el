@@ -41,19 +41,22 @@
 ;;
 ;;; Basic Usage:
 ;;
-;; You may want to back up existing data in ~/.bbdb and ~/.emacs.d/bbdb in case
-;; you don't like the newly imported data.
+;; Back up bbdb by copying `bbdb-file' in case things go wrong.
 ;;
 ;; Simply M-x `bbdb-csv-import-buffer' or `bbdb-csv-import-file'.
 ;; When called interactively, they prompt for file or buffer arguments.
 
 ;;; Advanced usage / notes:
-;; Tested to work with thunderbird, gmail, linkedin, outlook.com/hotmail.com For
+;; Tested to work with thunderbird, gmail, linkedin, outlook.com/hotmail.com. For
 ;; those programs, if it's exporter has an option of what kind of csv format,
 ;; choose it's own native format if available, if not, choose an outlook
 ;; compatible format. If you're exporting from some other program and its csv
 ;; exporter claims outlook compatibility, there is a good chance it will work
 ;; out of the box.
+;;
+;; Duplicate contacts (according to email address) are skipped if
+;; bbdb-allow-duplicates is nil (default). Any duplicates found are echoed at
+;; the end of the import.
 ;;
 ;; If things don't work, you can probably fix it with a custom field mapping
 ;; variable. It should not be too hard. Use the existing tables as an
@@ -358,13 +361,13 @@ Defaults to current buffer."
   (let* ((csv-data (pcsv-parse-buffer (get-buffer (or buffer-or-name (current-buffer)))))
          (csv-fields (car csv-data))
          (csv-data (cdr csv-data))
-         (initial-duplicate-value bbdb-allow-duplicates)
-         csv-record rd assoc-plus map-bbdb)
+         (allow-dupes bbdb-allow-duplicates)
+         csv-record rd assoc-plus map-bbdb dupes)
     ;; convenient function names
     (fset 'rd 'bbdb-csv-import-rd)
     (fset 'assoc-plus 'bbdb-csv-import-assoc-plus)
     (fset 'map-bbdb (-partial 'bbdb-csv-import-map-bbdb csv-fields))
-    ;; better to allow duplicates rather than fail
+    ;; we handle duplicates ourselves
     (setq bbdb-allow-duplicates t)
     ;; loop over the csv records
     (while (setq csv-record (map 'list 'cons csv-fields (pop csv-data)))
@@ -427,8 +430,20 @@ Defaults to current buffer."
                                (setq e (make-symbol (downcase e)))
                                (cons e (cadr list)))) ;; change from (a b) to (a . b)
                            (rd #'assoc-expand (map-bbdb :xfields)))))
-          (bbdb-create-internal name affix aka organization mail phone address xfields t))))
-    (setq bbdb-allow-duplicates initial-duplicate-value)))
+          ;; we copy and subvert bbdb's duplicate detection instead of catching
+          ;; errors so that we don't interfere with other errors, and can print
+          ;; them nicely at the end.
+          (let (found-dupe)
+            (dolist (elt mail)
+              (when (bbdb-gethash elt '(mail))
+                (push elt dupes)
+                (setq found-dupe t)))
+            (when (or allow-dupes (not found-dupe))
+              (bbdb-create-internal name affix aka organization mail phone address xfields t))))))
+    (when dupes (if allow-dupes
+                    (message "Warning, contacts with duplicate email addresses were imported:\n%s" dupes)
+                  (message "Skipped contacts with duplicate email addresses:\n%s" dupes)))
+    (setq bbdb-allow-duplicates allow-dupes)))
 
 (defun bbdb-csv-import-rd (func list)
   "like mapcar but don't build nil results into the resulting list"
