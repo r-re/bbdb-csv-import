@@ -317,7 +317,7 @@ a tree (a list with lists inside it)"
          (cons it acc)
        (setq it (cdr it))
        (let* ((i 1)
-              (first-field (car (flatten it))))
+              (first-field (car (-flatten it))))
          (setq acc (cons it acc))
          ;; use first-field to test if there is another repetition.
          (while (member
