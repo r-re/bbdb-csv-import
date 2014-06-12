@@ -24,7 +24,7 @@
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ;;; Commentary:
-
+;;
 ;; Importer of csv (comma separated value) text into Emacs’s bbdb database,
 ;; version 3+. Works out of the box with csv exported from Thunderbird, Gmail,
 ;; Linkedin, Outlook.com/hotmail, and probably others. 
@@ -47,6 +47,7 @@
 ;; When called interactively, they prompt for file or buffer arguments.
 
 ;;; Advanced usage / notes:
+;;
 ;; Tested to work with thunderbird, gmail, linkedin, outlook.com/hotmail.com. For
 ;; those programs, if it's exporter has an option of what kind of csv format,
 ;; choose it's own native format if available, if not, choose an outlook
@@ -80,8 +81,9 @@
 ;; also be useful. Please send any new mapping tables to the maintainer listed
 ;; in this file. The maintainer should be able to help with any issues and may
 ;; create a new mapping table given sample data.
+
+;;; Misc tips/troubleshooting:
 ;;
-;; Misc tips/troubleshooting:
 ;; - ASynK looks promising for syncing bbdb/google/outlook.
 ;; - The git repo contains a test folder with exactly tested version info and working
 ;;   test data.
@@ -90,6 +92,16 @@
 ;;   do M-x bbdb then .* then C-u * d on the beginning of a record.
 ;; - After changing a mapping table variable, don't forget to re-execute
 ;;   (setq bbdb-csv-import-mapping-table ...) so that it propagates.
+
+;;; Bugs, patches, discussion, feedback
+;;
+;; Patches and bugs are very welcome via https://gitlab.com/iankelling/bbdb-csv-import
+;; 
+;; Questions, feedback, etc are very welcome via email to Ian Kelling
+;; <ian@iankelling.org>. I will add any useful questions, answers, etc. to this
+;; file. The scope/userbase of this project doesn't justify a mailing list, but if
+;; it ever did I would start a mailman or discourse to act as a mailing list
+;; and forum.
 
 
 ;;; Code:
