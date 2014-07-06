@@ -48,26 +48,32 @@
 
 ;;; Advanced usage / notes:
 ;;
-;; Tested to work with thunderbird, gmail, linkedin, outlook.com/hotmail.com. For
-;; those programs, if it's exporter has an option of what kind of csv format,
-;; choose it's own native format if available, if not, choose an outlook
-;; compatible format. If you're exporting from some other program and its csv
-;; exporter claims outlook compatibility, there is a good chance it will work
-;; out of the box.
+;; Tested to work with thunderbird, gmail, linkedin,
+;; outlook.com/hotmail.com. For those programs, if it's exporter has an option
+;; of what kind of csv format, choose it's own native format if available, if
+;; not, choose an outlook compatible format. If you're exporting from some other
+;; program and its csv exporter claims outlook compatibility, there is a good
+;; chance it will work out of the box. If it doesn't, you can try to fix it as
+;; described below, or the maintainer will be happy to help, just anonymize your
+;; csv data using the M-x bbdb-csv-anonymize-current-buffer (make sure csv
+;; buffer is the current one) and attach it to an email.
 ;;
 ;; Duplicate contacts (according to email address) are skipped if
 ;; bbdb-allow-duplicates is nil (default). Any duplicates found are echoed at
 ;; the end of the import.
+
+;;; Custom mapping of csv fields
 ;;
-;; If things don't work, you can probably fix it with a custom field mapping
-;; variable. It should not be too hard. Use the existing tables as an
-;; example. By default, we use a combination of most predefined mappings, and
-;; look for all of their fields, but it is probably best to avoid that kind of
-;; table when setting up your own as it is an unnecessary complexity in that
-;; case. If you have a problem with data from a supported export program, start
-;; by testing its specific mapping table instead of the combined one. Here is a
-;; handy template to set each of the predefined mapping tables if you would
-;; rather avoid the configure interface:
+;; If a field is handled wrong or you want to extend the program to handle a new
+;; kind of csv format, you need to setup a custom field mapping variable. It
+;; should not be too hard, but you can also  Use the existing tables as an example. By default, we
+;; use a combination of most predefined mappings, and look for all of their
+;; fields, but it is probably best to avoid that kind of table when setting up
+;; your own as it is an unnecessary complexity in that case. If you have a
+;; problem with data from a supported export program, start by testing its
+;; specific mapping table instead of the combined one. Here is a handy template
+;; to set each of the predefined mapping tables if you would rather avoid the
+;; configure interface:
 ;; 
 ;; (setq bbdb-csv-import-mapping-table bbdb-csv-import-combined)
 ;; (setq bbdb-csv-import-mapping-table bbdb-csv-import-thunderbird)
@@ -77,16 +83,17 @@
 ;; (setq bbdb-csv-import-mapping-table bbdb-csv-import-outlook-web)
 ;; (setq bbdb-csv-import-mapping-table bbdb-csv-import-outlook-typed-email)
 ;; 
-;; In addition to the examples, the doc string for `bbdb-create-internal' may
-;; also be useful. Please send any new mapping tables to the maintainer listed
-;; in this file. The maintainer should be able to help with any issues and may
-;; create a new mapping table given sample data.
+;; The doc string for `bbdb-create-internal' may also be useful when creating a
+;; mapping table. Please send any new tables to the maintainer listed in this
+;; file. The maintainer should be able to help with any issues and may create a
+;; new mapping table given sample data.
 
 ;;; Misc tips/troubleshooting:
 ;;
 ;; - ASynK looks promising for syncing bbdb/google/outlook.
 ;; - The git repo contains a test folder with exactly tested version info and working
-;;   test data.
+;;   test data.  Software, and especially online services are prone to changing how they
+;;   export. Please send feedback if you run into problems.
 ;; - bbdb doesn't work if you delete the bbdb database file in
 ;;   the middle of an emacs session. If you want to empty the current bbdb database,
 ;;   do M-x bbdb then .* then C-u * d on the beginning of a record.
@@ -102,6 +109,10 @@
 ;; file. The scope/userbase of this project doesn't justify a mailing list, but if
 ;; it ever did I would start a mailman or discourse to act as a mailing list
 ;; and forum.
+
+;;; known bugs:
+;; * linkedin data contains ^M characters that need to be removed before import
+;; * blank lines are not ignored
 
 
 ;;; Code:
@@ -470,6 +481,16 @@ Defaults to current buffer."
   (let ((result (cdr (assoc key list))))
     (when (not (string= "" result))
       result)))
+
+(defun bbdb-csv-anonymize-current-buffer ()
+  (interactive)
+  "Anonymize the current buffer which contains csv data.
+  The first line should contain header names."
+  (goto-line 2)
+  (while (re-search-forward "\\w")
+    (delete-char -1)
+    (insert (number-to-string (random 9)))))
+
 
 (provide 'bbdb-csv-import)
 
