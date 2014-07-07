@@ -9,3 +9,11 @@ thunderbird test data from thunderbird 17.0.10
 in addition to the last log,
 linkedin test data retrieved 4/16/2014
 gmail test data retrieved 4/16/2014
+
+7/07/2014
+bbdb-version melpa 20140515.806
+pcsv 20131110.750
+emacs 24.4.50.1 development version
+
+test data, same as previous except
+linkedin test data retrieved 7/06/2014
