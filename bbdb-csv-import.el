@@ -110,10 +110,6 @@
 ;; it ever did I would start a mailman or discourse to act as a mailing list
 ;; and forum.
 
-;;; known bugs:
-;; * linkedin data contains ^M characters that need to be removed before import
-;; * blank lines are not ignored
-
 
 ;;; Code:
 (require 'pcsv)
@@ -369,19 +365,30 @@ don't want flattened."
 
 ;;;###autoload
 (defun bbdb-csv-import-file (filename)
-  "Parse and import csv file FILENAME to bbdb."
+  "Parse and import csv file FILENAME to bbdb.
+The file will be saved to disk with blank lines and aberrant characters removed."
   (interactive "fCSV file containg contact data: ")
   (bbdb-csv-import-buffer (find-file-noselect filename)))
 
 ;;;###autoload
 (defun bbdb-csv-import-buffer (&optional buffer-or-name) 
-  "Parse and import csv BUFFER-OR-NAME to bbdb.
-Argument is a buffer or name of a buffer.
-Defaults to current buffer."
+  "Parse and import csv buffer to bbdb. Interactively, it prompts for a buffer.
+The buffer will be saved to disk with blank lines and aberrant characters removed.
+BUFFER-OR-NAME is a buffer or name of a buffer, or the current buffer if nil."
   (interactive "bBuffer containing CSV contact data: ")
   (when (null bbdb-csv-import-mapping-table)
     (error "error: `bbdb-csv-import-mapping-table' is nil. Please set it and rerun."))
-  (let* ((csv-data (pcsv-parse-buffer (get-buffer (or buffer-or-name (current-buffer)))))
+  (let* ((csv-buffer (get-buffer (or buffer-or-name (current-buffer))))
+         (csv-data (save-excursion
+                     (set-buffer csv-buffer)
+                     ;; deal with blank lines and ^M from linkedin
+                     (flush-lines "^\\s-*$")
+                     (goto-char (point-min))
+                     ;; remove ^M aka ret characters
+                     (while (re-search-forward (char-to-string 13) nil t)
+                       (replace-match ""))
+                     (basic-save-buffer)
+                     (pcsv-parse-file buffer-file-name)))
          (csv-fields (car csv-data))
          (csv-data (cdr csv-data))
          (allow-dupes bbdb-allow-duplicates)
