@@ -45,6 +45,9 @@
 ;;
 ;; Simply M-x `bbdb-csv-import-buffer' or `bbdb-csv-import-file'.
 ;; When called interactively, they prompt for file or buffer arguments.
+;;
+;; Then view your bbdb records: M-x bbdb .* RET
+;; If the import looks good save the bbdb database: C-x s (bbdb-save)
 
 ;;; Advanced usage / notes:
 ;;
