@@ -68,15 +68,14 @@
 ;;; Custom mapping of csv fields
 ;;
 ;; If a field is handled wrong or you want to extend the program to handle a new
-;; kind of csv format, you need to setup a custom field mapping variable. It
-;; should not be too hard, but you can also  Use the existing tables as an example. By default, we
-;; use a combination of most predefined mappings, and look for all of their
-;; fields, but it is probably best to avoid that kind of table when setting up
-;; your own as it is an unnecessary complexity in that case. If you have a
-;; problem with data from a supported export program, start by testing its
-;; specific mapping table instead of the combined one. Here is a handy template
-;; to set each of the predefined mapping tables if you would rather avoid the
-;; configure interface:
+;; kind of csv format, you need to setup a custom field mapping variable. Use
+;; the existing tables as an example. By default, we use a combination of most
+;; predefined mappings, and look for all of their fields, but it is probably
+;; best to avoid that kind of table when setting up your own as it is an
+;; unnecessary complexity in that case. If you have a problem with data from a
+;; supported export program, start by testing its specific mapping table instead
+;; of the combined one. Here is a handy template to set each of the predefined
+;; mapping tables if you would rather avoid the configure interface:
 ;; 
 ;; (setq bbdb-csv-import-mapping-table bbdb-csv-import-combined)
 ;; (setq bbdb-csv-import-mapping-table bbdb-csv-import-thunderbird)
