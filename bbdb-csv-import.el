@@ -89,6 +89,10 @@
 ;; mapping table. Please send any new tables to the maintainer listed in this
 ;; file. The maintainer should be able to help with any issues and may create a
 ;; new mapping table given sample data.
+;;
+;; Mapping table tips: For field names or sets of field names which go together,
+;; and are numbered, 1, 2, 3, the repeat keyword can be used to expand as many
+;; as are in your csv data.
 
 ;;; Misc tips/troubleshooting:
 ;;
@@ -106,11 +110,10 @@
 ;;
 ;; Patches and bugs are very welcome via https://gitlab.com/iankelling/bbdb-csv-import
 ;; 
-;; Questions, feedback, etc are very welcome via email to Ian Kelling
-;; <ian@iankelling.org>. I will add any useful questions, answers, etc. to this
-;; file. The scope/userbase of this project doesn't justify a mailing list, but if
-;; it ever did I would start a mailman or discourse to act as a mailing list
-;; and forum.
+;; Questions, feedback, or anything is very welcome at to the bbdb-csv-import mailing list
+;; https://lists.iankelling.org/listinfo/bbdb-csv-import, no subscription needed to post via
+;; bbdb-csv-import@lists.iankelling.org
+
 
 
 ;;; Code:
@@ -324,10 +327,13 @@ See the commentary section of this file for more details."
 
 
 (defun  bbdb-csv-import-expand-repeats (csv-fields list)
-  "Return new list where elements from LIST in form (repeat elem1 ...)
-become ((elem1 ...) [(elem2 ...)] ...) for as many repeating
-numbered fields exist in the csv fields. elem can be a string or
-a tree (a list with lists inside it)"
+  "Return new list where elements from LIST in form (repeat elem1
+...)  become ((elem1 ...) [(elem2 ...)] ...) for as many fields
+exist in the csv fields. elem can be a string or a tree (a list
+with lists inside it). We use the first element as a template,
+and increase its number by one, and check if it exists, and then
+increment any other elements from the repeat list which have
+numbers in them."
   (cl-flet ((replace-num (num string)
                          ;; in STRING, replace all groups of numbers with NUM
                          (replace-regexp-in-string "[0-9]+"
