@@ -87,19 +87,21 @@
 ;; (setq bbdb-csv-import-mapping-table bbdb-csv-import-outlook-typed-email)
 ;; 
 ;; The doc string for `bbdb-create-internal' may also be useful when creating a
-;; mapping table. Please send any new tables to the maintainer listed in this
-;; file. The maintainer should be able to help with any issues and may create a
-;; new mapping table given sample data.
+;; mapping table. If you create a table for a program not not already supported,
+;; please share it with the mailing list so it can be added to this program.
+;; The maintainer should be able to help with any issues and may create a new
+;; mapping table given sample data.
 ;;
 ;; Mapping table tips:
 ;; * The repeat keyword expands numbered field names, based on the first
-;;   subsequent field, as many times as they exist in the csv data.
+;;   field, as many times as they exist in the csv data.
 ;; * All mapping fields are optional. A simple mapping table could be
 ;;   (setq bbdb-csv-import-mapping-table '((:mail "Primary Email")))
-;; * xfields uses the field name to create custom fields in bbdb. It downcases
-;;   the field name, and replaces spaces with "-".
-;; * For example, if you had a csv data for bbdb's mail-alias, you could add to :xfields
-;;   a csv field name would become "mail-alias", like "Mail Alias" or "Mail-alias"
+;; * :xfields uses the csv field name to create custom fields in bbdb. It downcases
+;;   the field name, and replaces spaces with "-", and repeating dashes with a
+;;   single one . For example, if you had a csv named "Mail Alias" or "Mail - alias",
+;;   you could add it to :xfields in a mapping table and it would become "mail-alias"
+;;   in bbdb.
 
 ;;; Misc tips/troubleshooting:
 ;;
@@ -122,7 +124,8 @@
 ;; 
 ;; Questions, feedback, or anything is very welcome at to the bbdb-csv-import mailing list
 ;; https://lists.iankelling.org/listinfo/bbdb-csv-import, no subscription needed to post via
-;; bbdb-csv-import@lists.iankelling.org
+;; bbdb-csv-import@lists.iankelling.org. The maintainer would probably be happy
+;; to work on new features if something is missing.
 
 
 
@@ -476,6 +479,8 @@ BUFFER-OR-NAME is a buffer or name of a buffer, or the current buffer if nil."
               (xfields (rd (lambda (list)
                              (let ((e (car list)))
                                (while (string-match " +" e)
+                                 (setq e (replace-match "-" nil nil e)))
+                               (while (string-match "--+" e)
                                  (setq e (replace-match "-" nil nil e)))
                                (setq e (make-symbol (downcase e)))
                                (cons e (cadr list)))) ;; change from (a b) to (a . b)
