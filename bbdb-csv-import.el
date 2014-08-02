@@ -9,6 +9,7 @@
 ;; Package-Requires: ((pcsv "1.3.3") (dash "2.5.0") (bbdb "20140412.1949"))
 ;; Keywords: csv, util, bbdb
 ;; Homepage: https://gitlab.com/iankelling/bbdb-csv-import
+;; Mailing-List: https://lists.iankelling.org/listinfo/bbdb-csv-import
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -59,7 +60,7 @@
 ;; chance it will work out of the box. If it doesn't, you can try to fix it as
 ;; described below, or the maintainer will be happy to help, just anonymize your
 ;; csv data using the M-x bbdb-csv-anonymize-current-buffer (make sure csv
-;; buffer is the current one) and attach it to an email.
+;; buffer is the current one) and attach it to an email to the mailing list.
 ;;
 ;; Duplicate contacts (according to email address) are skipped if
 ;; bbdb-allow-duplicates is nil (default). Any duplicates found are echoed at
@@ -90,9 +91,15 @@
 ;; file. The maintainer should be able to help with any issues and may create a
 ;; new mapping table given sample data.
 ;;
-;; Mapping table tips: For field names or sets of field names which go together,
-;; and are numbered, 1, 2, 3, the repeat keyword can be used to expand as many
-;; as are in your csv data.
+;; Mapping table tips:
+;; * The repeat keyword expands numbered field names, based on the first
+;;   subsequent field, as many times as they exist in the csv data.
+;; * All mapping fields are optional. A simple mapping table could be
+;;   (setq bbdb-csv-import-mapping-table '((:mail "Primary Email")))
+;; * xfields uses the field name to create custom fields in bbdb. It downcases
+;;   the field name, and replaces spaces with "-".
+;; * For example, if you had a csv data for bbdb's mail-alias, you could add to :xfields
+;;   a csv field name would become "mail-alias", like "Mail Alias" or "Mail-alias"
 
 ;;; Misc tips/troubleshooting:
 ;;
@@ -121,7 +128,6 @@
 (require 'dash)
 (require 'bbdb-com)
 (eval-when-compile (require 'cl))
-
 
 (defconst bbdb-csv-import-thunderbird
   '((:namelist "First Name" "Last Name")
@@ -461,8 +467,6 @@ BUFFER-OR-NAME is a buffer or name of a buffer, or the current buffer if nil."
                            (map-bbdb :address)))
               (xfields (rd (lambda (list)
                              (let ((e (car list)))
-                               (while (string-match "-" e)
-                                 (setq e (replace-match "" nil nil e)))
                                (while (string-match " +" e)
                                  (setq e (replace-match "-" nil nil e)))
                                (setq e (make-symbol (downcase e)))
