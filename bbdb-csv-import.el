@@ -112,6 +112,9 @@
 ;;   do M-x bbdb then .* then C-u * d on the beginning of a record.
 ;; - After changing a mapping table variable, don't forget to re-execute
 ;;   (setq bbdb-csv-import-mapping-table ...) so that it propagates.
+;; - :namelist is used instead of :name if 2 or more non-empty fields from :namelist are
+;;   found in a record. If :name is empty, we try a single non-empty field from :namelist
+;;   This sounds a bit strange, but it's to try and deal with Thunderbird idiosyncrasies.
 
 ;;; Bugs, patches, discussion, feedback
 ;;
@@ -427,11 +430,16 @@ BUFFER-OR-NAME is a buffer or name of a buffer, or the current buffer if nil."
                                (data (assoc-plus (if (consp e) (cadr e) e) csv-record)))
                            (if data (list data-name data)))))
         ;; set the arguments to bbdb-create-internal, then call it, the end.
-        (let ((name (let ((name (rd-assoc :namelist)))
-                      ;; prioritize any combination of first middle last over :name
-                      (if (>= (length name) 2)
-                          (mapconcat 'identity name " ")
-                        (car (rd-assoc :name)))))
+        (let ((name (let ((namelist (rd-assoc :namelist))
+                          (let-name (car (rd-assoc :name))))
+                      ;; priority: 2 or more from :namelist, then non-empty :name, then
+                      ;; any single element of :namelist
+                      (cond ((>= (length namelist) 2)
+                             (mapconcat 'identity namelist " "))
+                            ((not (null let-name))
+                             let-name)
+                            (t
+                             (mapconcat 'identity namelist " ")))))
               (affix (rd-assoc :affix))
               (aka (rd-assoc :aka))
               (organization (rd-assoc :organization))
