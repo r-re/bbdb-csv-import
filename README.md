@@ -8,4 +8,5 @@ Outlook.com/hotmail, and probably others.
 Documentation is at [./bbdb-csv-import.el](bbdb-csv-import.el).
 
 Bug tracker is through gitlab, https://gitlab.com/iankelling/bbdb-csv-import
-Feel free to contact the maintainer: Ian Kelling <ian@iankelling.org>
+
+Please email me any feedback or thoughts: Ian Kelling <ian@iankelling.org>
