@@ -284,6 +284,43 @@ not the export for Outlook 2010 and 2013.")
   "Like bbdb-csv-import-gmail-typed-email, but for outlook-web.
 Adds email labels as custom fields.")
 
+(defconst bbdb-csv-import-evolution
+  '((:namelist "given_name"
+	       "middle_name"
+	       "family_name"
+	       "name_suffix"
+	       )
+    (:name "given_name")
+    (:aka "nickname")
+    (:mail "email_1"
+	   "email_2"
+	   "email_3"
+	   "email_4")
+    (:phone "business_phone"
+	    "home_phone"
+	    "business_fax"
+	    "pager"
+	    "mobile_phone")
+    (:address
+     (("Home Address"
+       (("Home Address2")
+        "Home Adress City" "Home Adress State"
+        "Home Adress PostCode" "Home Adress Country"))
+      ("Business Address"
+       (("Business Address 2")
+        "Business Adress City" "Business Adress State"
+        "Business Adress PostCode" "Business Adress Country"))))
+    (:organization "org")
+    (:xfields "title"
+	      "office"
+	      "org"
+	      "homepage_url"
+	      "caluri"
+	      "Birth Year"
+	      "Birth Month"
+	      "Birth Day"
+	      "note"))
+"Evolution csv format")
 
 (defun bbdb-csv-import-flatten1 (list)
   "Flatten LIST by 1 level."
